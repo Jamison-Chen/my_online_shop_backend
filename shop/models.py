@@ -51,10 +51,10 @@ class customer(models.Model):
     phone_number = models.CharField(max_length=32, blank=True, null=True)
     address = models.CharField(max_length=64, blank=True, null=True)
     credit_card_number = models.CharField(max_length=32, blank=True, null=True)
-    account_name = models.CharField(max_length=16, unique=True, default='anonymous')
+    account_name = models.CharField(max_length=16, unique=True)
     account_type = models.CharField(max_length=16, choices=accountTypeChoices,
                                     default=NORMAL)
-    password = models.CharField(max_length=32, default='password')
+    password = models.CharField(max_length=32)
     
     @property
     def full_name(self):
