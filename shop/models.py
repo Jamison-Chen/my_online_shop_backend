@@ -5,8 +5,14 @@ from django.utils import timezone
 class category(models.Model):
     name = models.CharField(max_length=32)
     
+    def __str__(self):
+        return self.name
+    
 class brand(models.Model):
     name = models.CharField(max_length=32)
+    
+    def __str__(self):
+        return self.name
 
 class product(models.Model):
     category = models.ForeignKey(category, on_delete=SET_NULL, null=True)
@@ -15,6 +21,9 @@ class product(models.Model):
     unit_price = models.FloatField()
     description = models.TextField()
     inventory = models.PositiveIntegerField()
+    
+    def __str__(self):
+        return self.name
     
 class product_picture(models.Model):
     def path(instance, filename):
@@ -46,6 +55,13 @@ class customer(models.Model):
     account_type = models.CharField(max_length=16, choices=accountTypeChoices,
                                     default=NORMAL)
     password = models.CharField(max_length=32, default='password')
+    
+    @property
+    def full_name(self):
+        return "{} {}".format(self.first_name, self.last_name)
+    
+    def __str__(self):
+        return self.full_name
 
 class cart(models.Model):
     customer = models.ForeignKey(customer, on_delete=models.CASCADE)
