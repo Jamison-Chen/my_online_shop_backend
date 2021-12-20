@@ -14,10 +14,14 @@ class product(models.Model):
     name = models.CharField(max_length=32)
     unit_price = models.FloatField()
     description = models.TextField()
+    inventory = models.PositiveIntegerField()
     
 class product_picture(models.Model):
+    def path(instance, filename):
+        return 'product/{}_{}/{}'.format(instance.product.name,
+                                         instance.product.id, filename)
     product = models.ForeignKey(product, on_delete=models.CASCADE)
-    url = models.URLField(max_length=1024)
+    picture = models.ImageField(max_length=1024, upload_to=path)
     
 class customer(models.Model):
     MALE = 'Male'
