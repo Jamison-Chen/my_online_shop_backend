@@ -19,7 +19,7 @@ class product(models.Model):
     brand = models.ForeignKey(brand, on_delete=models.CASCADE)
     name = models.CharField(max_length=32)
     unit_price = models.FloatField()
-    description = models.TextField()
+    description = models.TextField(blank=True, null=True)
     inventory = models.PositiveIntegerField()
     
     def __str__(self):
