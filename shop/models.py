@@ -21,6 +21,7 @@ class product(models.Model):
     unit_price = models.FloatField()
     description = models.TextField(blank=True, null=True)
     inventory = models.PositiveIntegerField()
+    quantity_sold = models.PositiveIntegerField()
     
     def __str__(self):
         return self.name
