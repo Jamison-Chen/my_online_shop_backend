@@ -26,7 +26,7 @@ def readSpecificProduct(request, productId):
         res["Access-Control-Allow-Origin"] = "*"
         return res
 
-def readAllProduct(request):
+def readAllProducts(request):
     if request.method == 'GET':
         category = request.GET.get("category")
         if category and category != "all":
