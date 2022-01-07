@@ -2,9 +2,18 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from .models import product
 
+def CORS_exempt(func):
+    def wrap(request, **args):
+        res = func(request, **args)
+        res["Access-Control-Allow-Origin"] = "*"
+        return res
+    return wrap
+
+@CORS_exempt
 def createProduct(request):
     pass
 
+@CORS_exempt
 def readSpecificProduct(request, productId):
     if request.method == 'GET':
         # print(request.user, request.user.is_authenticated)
@@ -23,9 +32,9 @@ def readSpecificProduct(request, productId):
                 }
             }
         res = JsonResponse(res)
-        res["Access-Control-Allow-Origin"] = "*"
         return res
 
+@CORS_exempt
 def readAllProducts(request):
     if request.method == 'GET':
         category = request.GET.get("category")
@@ -42,5 +51,4 @@ def readAllProducts(request):
                         "quantity_sold":i.quantity_sold}
                        for i in q]}
         res = JsonResponse(res)
-        res["Access-Control-Allow-Origin"] = "*"
         return res
