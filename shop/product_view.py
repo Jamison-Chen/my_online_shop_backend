@@ -13,11 +13,6 @@ def CORS_exempt(func):
 
 
 @CORS_exempt
-def createProduct(request):
-    pass
-
-
-@CORS_exempt
 def readSpecificProduct(request, productId):
     if request.method == "GET":
         # print(request.user, request.user.is_authenticated)

@@ -1,5 +1,4 @@
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
 from .models import category
 from django.db.models import Count
 
@@ -14,24 +13,12 @@ def CORS_exempt(func):
 
 
 @CORS_exempt
-def createCategory(request):
-    pass
-
-
-@CORS_exempt
-def readSpecificCategory(request, categoryId):
-    if request.method == "GET":
-        q = get_object_or_404(category, id=categoryId)
-        res = {"data": {"id": q.id, "name": q.name}}
-        res = JsonResponse(res)
-        return res
-
-
-@CORS_exempt
 def readAllCategoriesWithProducts(request):
     if request.method == "GET":
-        q = category.objects.annotate(num_of_product=Count("product")).filter(
-            num_of_product__gt=0
+        q = (
+            category.objects.annotate(num_of_product=Count("product"))
+            .filter(num_of_product__gt=0)
+            .order_by("name")
         )
         res = {
             "data": [
