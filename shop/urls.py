@@ -3,7 +3,7 @@ from django.urls import path, include
 from . import product_view
 from . import category_view
 from . import search_result_view
-from . import views
+from . import account_view
 
 urlpatterns = [
     path(
@@ -24,5 +24,5 @@ urlpatterns = [
         ),
     ),
     path("search", search_result_view.search),
-    path("login", views.index),
+    path("login", account_view.login),
 ]
