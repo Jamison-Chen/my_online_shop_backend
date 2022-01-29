@@ -1,18 +1,10 @@
 from django.http import JsonResponse
 from .models import category
 from django.db.models import Count
+from .my_decorators import cors_exempt
 
 
-def CORS_exempt(func):
-    def wrap(request, **args):
-        res = func(request, **args)
-        res["Access-Control-Allow-Origin"] = "*"
-        return res
-
-    return wrap
-
-
-@CORS_exempt
+@cors_exempt
 def readAllCategoriesWithProducts(request):
     if request.method == "GET":
         q = (

@@ -1,24 +1,14 @@
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponseNotFound
+from django.http import JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from .my_decorators import cors_exempt
 from .models import customer
-
-
-def CORS_exempt(func):
-    def wrap(request, **args):
-        res = func(request, **args)
-        res["Access-Control-Allow-Credentials"] = "true"
-        res["Access-Control-Allow-Methods"] = "*"
-        res["Access-Control-Allow-Origin"] = request.headers.get("Origin")
-        return res
-
-    return wrap
 
 
 # response.set_cookie("csrftoken", csrf.get_token(request))
 # can be substitude by @ensure_csrf_cookie
 @csrf_exempt
 @ensure_csrf_cookie
-@CORS_exempt
+@cors_exempt
 def login(request):
     def confirmIdentity():
         # TODOS: Implement the identity comfirmation logic.

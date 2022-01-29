@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models.deletion import DO_NOTHING, SET_NULL
+from django.db.models.deletion import DO_NOTHING
 from django.utils import timezone
 
 
