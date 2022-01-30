@@ -25,4 +25,6 @@ urlpatterns = [
     ),
     path("search", search_result_view.search),
     path("login", account_view.login),
+    path("logout", account_view.logout),
+    path("register", account_view.register),
 ]
