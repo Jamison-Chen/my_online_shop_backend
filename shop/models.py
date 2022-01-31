@@ -90,8 +90,8 @@ class payment(models.Model):
     HD = "Home Delivery"
     typeChoices = [(COD, COD), (ISP, ISP), (HD, HD)]
 
-    cart = models.OneToOneField(cart, on_delete=models.DO_NOTHING)
-    customer = models.ForeignKey(customer, on_delete=models.DO_NOTHING)
+    cart = models.OneToOneField(cart, on_delete=DO_NOTHING)
+    customer = models.ForeignKey(customer, on_delete=DO_NOTHING)
     address = models.CharField(max_length=128)
     type = models.CharField(max_length=32, choices=typeChoices)
     final_costs = models.FloatField()  # total costs - coupon + delivery fee
@@ -99,3 +99,14 @@ class payment(models.Model):
     shipped_date = models.DateTimeField(blank=True, null=True)  # blank if not shipped
     arrived_date = models.DateTimeField(blank=True, null=True)  # blank if not arrived
     picked_up_date = models.DateTimeField(blank=True, null=True)  # blank if not picked
+
+
+class favorite_item(models.Model):
+    customer = models.ForeignKey(customer, on_delete=DO_NOTHING)
+    product = models.ForeignKey(product, on_delete=DO_NOTHING)
+
+    def __str__(self):
+        return "{:s} / {:s}".format(self.customer.name, self.product.name)
+
+    class Meta:
+        unique_together = ["customer", "product"]

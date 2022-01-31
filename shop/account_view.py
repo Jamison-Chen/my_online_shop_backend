@@ -1,4 +1,3 @@
-from email.policy import default
 from django.http import JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.middleware import csrf
@@ -23,10 +22,13 @@ def login(request):
             return "user not found"
 
     if request.method == "POST" or request.method == "OPTIONS":
-        res = {"status": ""}
+        res = {"status": "", "data": {}}
         token = request.COOKIES.get("token", "")
-        if token != "" and customer.objects.filter(token=token):
+        q = customer.objects.filter(token=token)
+        if token != "" and len(q) == 1:
             res["status"] = "passed"
+            q = q.get()
+            res["data"]["name"] = q.name
             res = JsonResponse(res)
         else:
             email = request.POST.get("email", default=None)
