@@ -1,4 +1,3 @@
-from operator import mod
 from django.db import models
 from django.db.models.deletion import DO_NOTHING
 from django.utils import timezone
@@ -24,11 +23,24 @@ class product(models.Model):
     name = models.CharField(max_length=32)
     unit_price = models.FloatField()
     description = models.TextField(blank=True, null=True)
-    inventory = models.PositiveIntegerField()
-    quantity_sold = models.PositiveIntegerField()
 
     def __str__(self):
         return self.name
+
+
+class product_specification(models.Model):
+    COLOR = "color"
+    SIZE = "size"
+    groupChoices = [(COLOR, COLOR), (SIZE, SIZE)]
+    product = models.ForeignKey(product, on_delete=models.CASCADE)
+    group = models.CharField(max_length=32, choices=groupChoices)
+    detail = models.CharField(max_length=64)
+
+    def __str__(self):
+        return "{} / {} / {}".format(self.product.name, self.group, self.detail)
+
+    class Meta:
+        unique_together = ["product", "group", "detail"]
 
 
 class product_picture(models.Model):
@@ -38,7 +50,38 @@ class product_picture(models.Model):
         )
 
     product = models.ForeignKey(product, on_delete=models.CASCADE)
+    specification = models.ForeignKey(product_specification, on_delete=DO_NOTHING)
     picture = models.ImageField(max_length=1024, upload_to=path)
+
+
+class inventory(models.Model):
+    product = models.ForeignKey(product, on_delete=models.CASCADE)
+    color = models.ForeignKey(
+        product_specification,
+        on_delete=DO_NOTHING,
+        limit_choices_to={"group": "color"},
+        related_name="inventoty_of_this_color",
+    )
+    size = models.ForeignKey(
+        product_specification,
+        on_delete=DO_NOTHING,
+        limit_choices_to={"group": "size"},
+        related_name="inventoty_of_this_size",
+    )
+    inventory = models.PositiveIntegerField()
+    quantity_sold = models.PositiveIntegerField()
+
+    def __str__(self):
+        return "{} ({}, {}): {}/{}".format(
+            self.product.name,
+            self.color.detail,
+            self.size.detail,
+            self.inventory,
+            self.quantity_sold,
+        )
+
+    class Meta:
+        unique_together = ["product", "color", "size"]
 
 
 class customer(models.Model):
@@ -106,7 +149,7 @@ class favorite_item(models.Model):
     product = models.ForeignKey(product, on_delete=DO_NOTHING)
 
     def __str__(self):
-        return "{:s} / {:s}".format(self.customer.name, self.product.name)
+        return "{} / {}".format(self.customer.name, self.product.name)
 
     class Meta:
         unique_together = ["customer", "product"]

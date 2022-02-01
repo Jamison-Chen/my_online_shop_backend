@@ -8,6 +8,7 @@ def search(request):
     if request.method == "GET":
         query = request.POST.get("query", default="").split(",")
         q = product.objects.all()
+        # TODOS: implement search algorithm
         res = {
             "data": [
                 {
@@ -17,8 +18,6 @@ def search(request):
                     "brand": each.brand.name,
                     "unit_price": each.unit_price,
                     "description": each.description,
-                    "inventory": each.inventory,
-                    "quantity_sold": each.quantity_sold,
                 }
                 for each in q
             ]
