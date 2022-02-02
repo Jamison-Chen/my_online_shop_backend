@@ -1,6 +1,6 @@
 from django.http import HttpResponseNotFound, JsonResponse
 from django.shortcuts import get_object_or_404
-from .models import product, favorite_item
+from .models import product, inventory
 from .my_decorators import cors_exempt
 
 
@@ -16,8 +16,14 @@ def readSpecificProduct(request, productId):
                 "brand": q.brand.name,
                 "unit_price": q.unit_price,
                 "description": q.description,
+                "inventory": {},
             }
         }
+        q = inventory.objects.filter(product__id=productId)
+        for each in q:
+            res["data"]["inventory"][
+                each.color.detail + "_" + each.size.detail
+            ] = each.inventory
         res = JsonResponse(res)
         return res
     return HttpResponseNotFound()
