@@ -116,10 +116,10 @@ class customer(models.Model):
 class cart(models.Model):
     customer = models.OneToOneField(customer, on_delete=models.CASCADE)
     products = models.ManyToManyField(inventory, through="cart_item")
-    total_costs = models.FloatField()  # sum of all subtotals
+    total_costs = models.FloatField(default=0.0)  # sum of all subtotals
 
     def __str__(self):
-        return "{}'s cart".format(customer.name)
+        return "{}'s cart".format(self.customer.name)
 
 
 class cart_item(models.Model):
@@ -129,7 +129,12 @@ class cart_item(models.Model):
     subtotal_costs = models.FloatField()
 
     def __str__(self):
-        return "{}'s cart item: {}".format(cart.customer.name, inventory.product.name)
+        return "item in {}: {} (q={}, subtotal={})".format(
+            self.cart, self.inventory, self.quantity, self.subtotal_costs
+        )
+
+    class Meta:
+        unique_together = ["inventory", "cart"]
 
 
 class order(models.Model):

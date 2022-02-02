@@ -16,22 +16,36 @@ def index(request):
         res = {}
         if operation == "create":
             cust = customer.objects.get(token=token)
-            inv = inventory.objects.get(id=request.POST.get("inventory", default=""))
-            quantity = request.POST.get("quantity", default="")
-            crt = cart.objects.get(customer=cust)
+            crt = cart.objects.filter(customer=cust)
+            if len(crt) != 1:
+                crt = cart.objects.create(customer=cust)
+            else:
+                crt = crt[0]
+            inv = inventory.objects.get(id=request.POST.get("inventory_id", default=""))
+            quantity = int(request.POST.get("quantity", default=""))
             subTotal = inv.product.unit_price * quantity
-            q = cart_item.objects.create(
-                inventory=inv, cart=crt, quantity=quantity, subtotal_costs=subTotal
+            citm = cart_item.objects.filter(cart=crt, inventory=inv)
+            if citm:
+                citm.update(
+                    quantity=citm[0].quantity + quantity,
+                    subtotal_costs=citm[0].subtotal_costs + subTotal,
+                )
+            else:
+                citm = cart_item.objects.create(
+                    cart=crt, inventory=inv, quantity=quantity, subtotal_costs=subTotal
+                )
+            cart.objects.filter(customer=cust).update(
+                total_costs=crt.total_costs + subTotal
             )
             res["status"] = "succeeded"
         elif operation == "read":
             res["data"] = {}
-            q = cart.objects.filter(customer__token=token)
-            res["data"]["id"] = q.id
-            res["data"]["total_costs"] = q.total_costs
-            if q:
+            crt = cart.objects.filter(customer__token=token)
+            res["data"]["id"] = crt.id
+            res["data"]["total_costs"] = crt.total_costs
+            if crt:
                 res["data"]["cart_items"] = []
-                for eachCartItem in q.products:
+                for eachCartItem in crt.products:
                     res["data"]["cart_items"].append(
                         {
                             "cart_item_id": eachCartItem.id,
