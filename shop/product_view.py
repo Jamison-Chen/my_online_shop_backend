@@ -17,13 +17,16 @@ def readSpecificProduct(request, productId):
                 "unit_price": q.unit_price,
                 "description": q.description,
                 "inventory": {},
+                "inventory_id": {},
             }
         }
         q = inventory.objects.filter(product__id=productId)
         for each in q:
-            res["data"]["inventory"][
-                each.color.detail + "_" + each.size.detail
-            ] = each.inventory
+            inventoryName = "color:{}/size:{}".format(
+                each.color.detail, each.size.detail
+            )
+            res["data"]["inventory"][inventoryName] = each.inventory
+            res["data"]["inventory_id"][inventoryName] = each.id
         res = JsonResponse(res)
         return res
     return HttpResponseNotFound()

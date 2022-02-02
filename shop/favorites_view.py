@@ -1,26 +1,23 @@
-from unittest import result
 from django.http import (
-    HttpResponse,
     HttpResponseNotAllowed,
     JsonResponse,
     HttpResponseNotFound,
 )
 from django.views.decorators.csrf import csrf_exempt
 from .my_decorators import cors_exempt
-from .models import customer, favorite_item, product, product_specification
+from .models import customer, favorite_item, product
 
 
 @csrf_exempt
 @cors_exempt
-def favorites(request):
+def index(request):
     if request.method == "POST":
         operation = request.POST.get("operation", default="")
         token = request.COOKIES.get("token", "")
         res = {}
         if operation == "create" or operation == "delete":
-            pid = request.POST.get("product", default="")
             c = customer.objects.get(token=token)
-            p = product.objects.get(id=pid)
+            p = product.objects.get(id=request.POST.get("product", default=""))
             q = favorite_item.objects.filter(customer=c, product=p)
             if len(q) > 0 and operation == "delete":
                 q = favorite_item.objects.get(customer=c, product=p)

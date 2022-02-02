@@ -399,8 +399,7 @@ ALTER SEQUENCE public.shop_brand_id_seq OWNED BY public.shop_brand.id;
 CREATE TABLE public.shop_cart (
     id bigint NOT NULL,
     total_costs double precision NOT NULL,
-    is_ordered boolean NOT NULL,
-    order_date timestamp with time zone,
+    ordered_date timestamp with time zone,
     customer_id bigint NOT NULL
 );
 
@@ -504,17 +503,15 @@ ALTER SEQUENCE public.shop_category_id_seq OWNED BY public.shop_category.id;
 
 CREATE TABLE public.shop_customer (
     id bigint NOT NULL,
-    first_name character varying(32) NOT NULL,
-    last_name character varying(32) NOT NULL,
-    gender character varying(16) NOT NULL,
-    email character varying(256),
+    gender character varying(16),
+    email character varying(256) NOT NULL,
     phone_number character varying(32),
     credit_card_number character varying(32),
-    account_name character varying(16) NOT NULL,
     account_type character varying(16) NOT NULL,
-    address character varying(64),
     date_of_birth date,
-    password character varying(32) NOT NULL
+    password character varying(32) NOT NULL,
+    name character varying(64) NOT NULL,
+    token character varying(256)
 );
 
 
@@ -542,16 +539,93 @@ ALTER SEQUENCE public.shop_customer_id_seq OWNED BY public.shop_customer.id;
 
 
 --
+-- Name: shop_favorite_item; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.shop_favorite_item (
+    id bigint NOT NULL,
+    customer_id bigint NOT NULL,
+    product_id bigint NOT NULL
+);
+
+
+ALTER TABLE public.shop_favorite_item OWNER TO postgres;
+
+--
+-- Name: shop_favorite_item_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.shop_favorite_item_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.shop_favorite_item_id_seq OWNER TO postgres;
+
+--
+-- Name: shop_favorite_item_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.shop_favorite_item_id_seq OWNED BY public.shop_favorite_item.id;
+
+
+--
+-- Name: shop_inventory; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.shop_inventory (
+    id bigint NOT NULL,
+    color_id bigint NOT NULL,
+    size_id bigint NOT NULL,
+    inventory integer NOT NULL,
+    quantity_sold integer NOT NULL,
+    product_id bigint NOT NULL,
+    CONSTRAINT shop_inventory_inventory_check CHECK ((inventory >= 0)),
+    CONSTRAINT shop_inventory_quantity_sold_check CHECK ((quantity_sold >= 0))
+);
+
+
+ALTER TABLE public.shop_inventory OWNER TO postgres;
+
+--
+-- Name: shop_inventory_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.shop_inventory_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.shop_inventory_id_seq OWNER TO postgres;
+
+--
+-- Name: shop_inventory_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.shop_inventory_id_seq OWNED BY public.shop_inventory.id;
+
+
+--
 -- Name: shop_payment; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.shop_payment (
     id bigint NOT NULL,
-    type character varying(16) NOT NULL,
-    amount double precision NOT NULL,
-    done_date timestamp with time zone NOT NULL,
+    type character varying(32) NOT NULL,
+    final_costs double precision NOT NULL,
+    paid_date timestamp with time zone NOT NULL,
     cart_id bigint NOT NULL,
-    customer_id bigint NOT NULL
+    customer_id bigint NOT NULL,
+    address character varying(128) NOT NULL,
+    arrived_date timestamp with time zone,
+    picked_up_date timestamp with time zone,
+    shipped_date timestamp with time zone
 );
 
 
@@ -588,11 +662,7 @@ CREATE TABLE public.shop_product (
     unit_price double precision NOT NULL,
     description text,
     brand_id bigint NOT NULL,
-    category_id bigint,
-    inventory integer NOT NULL,
-    quantity_sold integer NOT NULL,
-    CONSTRAINT shop_product_inventory_check CHECK ((inventory >= 0)),
-    CONSTRAINT shop_product_quantity_sold_check CHECK ((quantity_sold >= 0))
+    category_id bigint NOT NULL
 );
 
 
@@ -626,7 +696,8 @@ ALTER SEQUENCE public.shop_product_id_seq OWNED BY public.shop_product.id;
 CREATE TABLE public.shop_product_picture (
     id bigint NOT NULL,
     product_id bigint NOT NULL,
-    picture character varying(1024) NOT NULL
+    picture character varying(1024) NOT NULL,
+    specification_id bigint NOT NULL
 );
 
 
@@ -651,6 +722,41 @@ ALTER TABLE public.shop_product_picture_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.shop_product_picture_id_seq OWNED BY public.shop_product_picture.id;
+
+
+--
+-- Name: shop_product_specification; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.shop_product_specification (
+    id bigint NOT NULL,
+    "group" character varying(32) NOT NULL,
+    detail character varying(64) NOT NULL,
+    product_id bigint NOT NULL
+);
+
+
+ALTER TABLE public.shop_product_specification OWNER TO postgres;
+
+--
+-- Name: shop_product_specification_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.shop_product_specification_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.shop_product_specification_id_seq OWNER TO postgres;
+
+--
+-- Name: shop_product_specification_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.shop_product_specification_id_seq OWNED BY public.shop_product_specification.id;
 
 
 --
@@ -752,6 +858,20 @@ ALTER TABLE ONLY public.shop_customer ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: shop_favorite_item id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_favorite_item ALTER COLUMN id SET DEFAULT nextval('public.shop_favorite_item_id_seq'::regclass);
+
+
+--
+-- Name: shop_inventory id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_inventory ALTER COLUMN id SET DEFAULT nextval('public.shop_inventory_id_seq'::regclass);
+
+
+--
 -- Name: shop_payment id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -770,6 +890,13 @@ ALTER TABLE ONLY public.shop_product ALTER COLUMN id SET DEFAULT nextval('public
 --
 
 ALTER TABLE ONLY public.shop_product_picture ALTER COLUMN id SET DEFAULT nextval('public.shop_product_picture_id_seq'::regclass);
+
+
+--
+-- Name: shop_product_specification id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_product_specification ALTER COLUMN id SET DEFAULT nextval('public.shop_product_specification_id_seq'::regclass);
 
 
 --
@@ -849,6 +976,18 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 54	Can change session	14	change_session
 55	Can delete session	14	delete_session
 56	Can view session	14	view_session
+57	Can add favorite_item	15	add_favorite_item
+58	Can change favorite_item	15	change_favorite_item
+59	Can delete favorite_item	15	delete_favorite_item
+60	Can view favorite_item	15	view_favorite_item
+61	Can add product_specification	16	add_product_specification
+62	Can change product_specification	16	change_product_specification
+63	Can delete product_specification	16	delete_product_specification
+64	Can view product_specification	16	view_product_specification
+65	Can add inventory	17	add_inventory
+66	Can change inventory	17	change_inventory
+67	Can delete inventory	17	delete_inventory
+68	Can view inventory	17	view_inventory
 \.
 
 
@@ -857,7 +996,7 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 --
 
 COPY public.auth_user (id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined) FROM stdin;
-1	pbkdf2_sha256$260000$lAE6fcZODRzBLHZTybxS7K$doizfLhfgps4yZSGSpZyyZ8xJQ32O5UgKzFwKeRXEv8=	2022-01-22 06:50:57.930882+08	t	admin			admin@test.com	t	t	2021-12-21 06:25:29.445558+08
+1	pbkdf2_sha256$260000$lAE6fcZODRzBLHZTybxS7K$doizfLhfgps4yZSGSpZyyZ8xJQ32O5UgKzFwKeRXEv8=	2022-01-31 04:56:05.939305+08	t	admin			admin@test.com	t	t	2021-12-21 06:25:29.445558+08
 \.
 
 
@@ -972,6 +1111,101 @@ COPY public.django_admin_log (id, action_time, object_id, object_repr, action_fl
 88	2022-01-22 08:56:15.374093+08	37	Leather stiletto-heel ankle boot	1	[{"added": {}}]	5	1
 89	2022-01-22 08:56:17.863999+08	37	Leather stiletto-heel ankle boot	2	[]	5	1
 90	2022-01-22 08:56:58.978711+08	38	Leather strappy high-heel sandal	1	[{"added": {}}]	5	1
+91	2022-01-30 17:22:26.905923+08	1	Alice	1	[{"added": {}}]	4	1
+92	2022-01-30 17:42:16.221611+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+93	2022-01-30 17:42:22.114418+08	1	Alice	2	[]	4	1
+94	2022-01-30 17:46:06.570363+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+95	2022-01-30 17:48:37.558367+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+96	2022-01-30 17:57:05.16109+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+97	2022-01-30 18:00:57.663059+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+98	2022-01-30 18:03:16.99584+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+99	2022-01-30 18:07:17.183424+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+100	2022-01-30 18:09:54.99011+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+101	2022-01-30 18:26:34.487798+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+102	2022-01-30 18:27:16.051451+08	1	Alice	2	[]	4	1
+103	2022-01-30 18:34:17.8751+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+104	2022-01-30 18:37:50.84448+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+105	2022-01-30 18:50:34.788294+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+106	2022-01-30 18:52:25.104248+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+107	2022-01-30 18:54:54.003254+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+108	2022-01-30 18:55:54.413572+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+109	2022-01-30 19:29:36.685522+08	1	Alice	2	[]	4	1
+110	2022-01-30 19:32:57.686428+08	1	Alice	2	[]	4	1
+111	2022-01-30 19:35:21.447281+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+112	2022-01-30 19:38:37.57094+08	1	Alice	2	[{"changed": {"fields": ["Token"]}}]	4	1
+113	2022-01-31 04:52:52.97011+08	2	Jamison	2	[{"changed": {"fields": ["Token"]}}]	4	1
+114	2022-02-02 02:43:28.176234+08	1	Jeans zw premium high waist ciga / color / blue	1	[{"added": {}}]	16	1
+115	2022-02-02 02:43:53.246028+08	2	Jeans zw premium high waist ciga / color / black	1	[{"added": {}}]	16	1
+116	2022-02-02 02:44:08.231886+08	3	Jeans zw premium high waist ciga / size / S	1	[{"added": {}}]	16	1
+117	2022-02-02 02:44:15.668017+08	4	Jeans zw premium high waist ciga / size / M	1	[{"added": {}}]	16	1
+118	2022-02-02 02:44:21.446389+08	5	Jeans zw premium high waist ciga / size / L	1	[{"added": {}}]	16	1
+119	2022-02-02 02:44:28.732781+08	6	Jeans zw premium high waist ciga / size / XL	1	[{"added": {}}]	16	1
+120	2022-02-02 02:44:41.444171+08	7	Basic asymmetrical t-shirt / color / white	1	[{"added": {}}]	16	1
+121	2022-02-02 02:44:53.290714+08	8	Basic asymmetrical t-shirt / color / pink	1	[{"added": {}}]	16	1
+122	2022-02-02 02:45:10.255504+08	9	Basic asymmetrical t-shirt / color / black	1	[{"added": {}}]	16	1
+123	2022-02-02 02:45:16.393147+08	10	Basic asymmetrical t-shirt / size / S	1	[{"added": {}}]	16	1
+124	2022-02-02 02:45:21.9537+08	11	Basic asymmetrical t-shirt / size / M	1	[{"added": {}}]	16	1
+125	2022-02-02 02:45:28.379564+08	12	Basic asymmetrical t-shirt / size / L	1	[{"added": {}}]	16	1
+126	2022-02-02 02:45:59.632878+08	13	Check shirt / size / M	1	[{"added": {}}]	16	1
+127	2022-02-02 02:46:22.318091+08	14	Check shirt / color / white	1	[{"added": {}}]	16	1
+128	2022-02-02 02:46:43.771434+08	15	Contrast metallic shirt / size / M	1	[{"added": {}}]	16	1
+129	2022-02-02 02:46:50.855244+08	16	Contrast metallic shirt / size / L	1	[{"added": {}}]	16	1
+130	2022-02-02 02:47:26.263365+08	17	Contrast metallic shirt / color / black	1	[{"added": {}}]	16	1
+131	2022-02-02 02:48:05.498241+08	18	High-heel leather boots / size / 7	1	[{"added": {}}]	16	1
+132	2022-02-02 02:48:11.506599+08	19	High-heel leather boots / size / 7.5	1	[{"added": {}}]	16	1
+133	2022-02-02 02:48:17.047232+08	20	High-heel leather boots / size / 8	1	[{"added": {}}]	16	1
+134	2022-02-02 02:48:28.480653+08	21	High-heel leather boots / size / 8.5	1	[{"added": {}}]	16	1
+135	2022-02-02 02:48:34.878639+08	22	High-heel leather boots / size / 9	1	[{"added": {}}]	16	1
+136	2022-02-02 02:48:51.298958+08	23	Soft leather high-heel boots / size / M	1	[{"added": {}}]	16	1
+137	2022-02-02 02:49:32.979598+08	24	Soft leather high-heel boots / color / brown	1	[{"added": {}}]	16	1
+138	2022-02-02 02:49:41.182621+08	25	Minimal collection long dress / size / M	1	[{"added": {}}]	16	1
+139	2022-02-02 02:49:48.840248+08	26	Minimal collection long dress / color / white	1	[{"added": {}}]	16	1
+140	2022-02-02 02:49:58.084971+08	27	Hooded coat / size / L	1	[{"added": {}}]	16	1
+141	2022-02-02 02:50:07.221686+08	28	Hooded coat / color / brown	1	[{"added": {}}]	16	1
+142	2022-02-02 02:50:15.289744+08	29	Basic asymmetrical t-shirt / size / S	1	[{"added": {}}]	16	1
+143	2022-02-02 02:50:33.109331+08	30	Basic asymmetrical t-shirt / color / blu	1	[{"added": {}}]	16	1
+144	2022-02-02 02:50:38.86225+08	30	Basic asymmetrical t-shirt / color / blue	2	[{"changed": {"fields": ["Detail"]}}]	16	1
+145	2022-02-02 02:50:45.050776+08	31	Basic asymmetrical t-shirt / color / green	1	[{"added": {}}]	16	1
+146	2022-02-02 02:58:04.07159+08	32	Basic asymmetrical t-shirt / size / XL	1	[{"added": {}}]	16	1
+147	2022-02-02 02:58:14.34181+08	33	Basic asymmetrical t-shirt / color / red	1	[{"added": {}}]	16	1
+148	2022-02-02 04:33:54.94415+08	34	Fleece jacket / color / brown	1	[{"added": {}}]	16	1
+149	2022-02-02 04:34:02.577915+08	35	Flowing bomber jacket / size / L	1	[{"added": {}}]	16	1
+150	2022-02-02 04:34:10.58603+08	36	Flowing bomber jacket / color / black	1	[{"added": {}}]	16	1
+151	2022-02-02 04:34:18.402754+08	37	Flowing bomber jacket / size / XL	1	[{"added": {}}]	16	1
+152	2022-02-02 04:34:30.125867+08	38	Frock coat with zips / color / black	1	[{"added": {}}]	16	1
+153	2022-02-02 04:34:37.041046+08	39	Frock coat with zips / size / XL	1	[{"added": {}}]	16	1
+154	2022-02-02 04:34:58.080582+08	40	Short check trench coat / color / gray	1	[{"added": {}}]	16	1
+155	2022-02-02 04:35:03.906776+08	41	Short check trench coat / size / XL	1	[{"added": {}}]	16	1
+156	2022-02-02 04:35:21.896176+08	42	Leather belt with square buckle / color / black	1	[{"added": {}}]	16	1
+157	2022-02-02 04:35:39.143815+08	43	Leather belt with square buckle / size / default	1	[{"added": {}}]	16	1
+158	2022-02-02 04:35:54.794966+08	44	Mirror lens cat eye sunglasses / color / default	1	[{"added": {}}]	16	1
+159	2022-02-02 04:36:15.364235+08	45	Mirror lens cat eye sunglasses / size / default	1	[{"added": {}}]	16	1
+160	2022-02-02 04:36:25.910062+08	46	Oversized poplin shirt / color / white	1	[{"added": {}}]	16	1
+161	2022-02-02 04:36:31.447261+08	47	Oversized poplin shirt / size / XL	1	[{"added": {}}]	16	1
+162	2022-02-02 04:36:38.812818+08	48	Round neck sweater / color / white	1	[{"added": {}}]	16	1
+163	2022-02-02 04:36:45.814138+08	49	Round neck sweater / size / M	1	[{"added": {}}]	16	1
+164	2022-02-02 04:36:54.685043+08	50	Scalloped leather court shoes / color / black	1	[{"added": {}}]	16	1
+165	2022-02-02 04:37:03.957863+08	51	Scalloped leather court shoes / size / 7	1	[{"added": {}}]	16	1
+166	2022-02-02 04:37:17.570439+08	52	Soft faux fur coat / color / white	1	[{"added": {}}]	16	1
+167	2022-02-02 04:37:31.59856+08	53	Soft faux fur coat / size / L	1	[{"added": {}}]	16	1
+168	2022-02-02 04:37:45.559909+08	54	Stretch t-shirt / color / blue	1	[{"added": {}}]	16	1
+169	2022-02-02 04:37:54.83984+08	55	Stretch t-shirt / size / M	1	[{"added": {}}]	16	1
+170	2022-02-02 04:38:02.301312+08	56	Textured faux shearling coat / color / white	1	[{"added": {}}]	16	1
+171	2022-02-02 04:38:10.406932+08	57	Textured faux shearling coat / size / XL	1	[{"added": {}}]	16	1
+172	2022-02-02 04:38:20.108675+08	58	Z1975 metallic jeans / color / blue	1	[{"added": {}}]	16	1
+173	2022-02-02 04:38:26.9783+08	59	Z1975 metallic jeans / size / M	1	[{"added": {}}]	16	1
+174	2022-02-02 04:38:34.940545+08	60	Ribbed knit sweater / color / gray	1	[{"added": {}}]	16	1
+175	2022-02-02 04:38:40.765831+08	61	Ribbed knit sweater / size / L	1	[{"added": {}}]	16	1
+176	2022-02-02 04:38:48.972035+08	62	Check asymmetric mini skirt / color / pink	1	[{"added": {}}]	16	1
+177	2022-02-02 04:38:58.190913+08	63	Check asymmetric mini skirt / size / S	1	[{"added": {}}]	16	1
+178	2022-02-02 04:39:10.675923+08	64	Leather stiletto-heel ankle boot / color / brown	1	[{"added": {}}]	16	1
+179	2022-02-02 04:39:16.31363+08	65	Leather stiletto-heel ankle boot / size / 8	1	[{"added": {}}]	16	1
+180	2022-02-02 04:39:25.950423+08	66	Leather strappy high-heel sandal / color / black	1	[{"added": {}}]	16	1
+181	2022-02-02 04:39:31.663599+08	67	Leather strappy high-heel sandal / size / 8	1	[{"added": {}}]	16	1
+182	2022-02-02 06:16:49.598583+08	4	Jeans zw premium high waist ciga (Jeans zw premium high waist ciga / color / blue, Jeans zw premium high waist ciga / size / S): 11/1	1	[{"added": {}}]	17	1
+183	2022-02-02 06:17:24.355796+08	5	Jeans zw premium high waist ciga (Jeans zw premium high waist ciga / color / blue, Jeans zw premium high waist ciga / size / M): 22/12	1	[{"added": {}}]	17	1
+184	2022-02-02 06:17:48.092167+08	6	Jeans zw premium high waist ciga (Jeans zw premium high waist ciga / color / blue, Jeans zw premium high waist ciga / size / L): 12/2	1	[{"added": {}}]	17	1
+185	2022-02-02 06:18:07.470663+08	7	Jeans zw premium high waist ciga (Jeans zw premium high waist ciga / color / black, Jeans zw premium high waist ciga / size / S): 21/1	1	[{"added": {}}]	17	1
 \.
 
 
@@ -994,6 +1228,9 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 12	auth	user
 13	contenttypes	contenttype
 14	sessions	session
+15	shop	favorite_item
+16	shop	product_specification
+17	shop	inventory
 \.
 
 
@@ -1028,6 +1265,12 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 24	shop	0005_auto_20211221_0639	2021-12-21 06:39:19.295782+08
 25	shop	0006_alter_product_description	2021-12-22 06:17:51.089161+08
 26	shop	0007_product_quantity_sold	2022-01-04 23:11:06.731904+08
+27	shop	0008_auto_20220127_2011	2022-01-30 13:10:35.804739+08
+28	shop	0009_customer_token	2022-01-30 15:25:41.103722+08
+29	shop	0010_favorite_item	2022-02-01 03:07:38.093721+08
+30	shop	0011_auto_20220202_0240	2022-02-02 02:40:20.89446+08
+31	shop	0012_auto_20220202_0339	2022-02-02 03:40:21.481082+08
+44	shop	0013_auto_20220202_0615	2022-02-02 06:15:33.194592+08
 \.
 
 
@@ -1038,6 +1281,22 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 COPY public.django_session (session_key, session_data, expire_date) FROM stdin;
 ctva0623f5xxcijmpzygw6uuwfw7w5w7	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1mzR6Z:4sRkwfW9deyOfscqj0PVCD8zr0e437xtZgkhDW2_H4k	2022-01-04 06:26:03.495155+08
 7azrbd7gr062r7pkk6d9jbywto12aahf	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nB2kD:wemOOvtYGThA2s9K53la6k8sXAVW9bHuS8YG4iCSyx8	2022-02-05 06:50:57.95027+08
+7wbfr2zcs2vinu47o0icfa4vn211g5e8	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE6Of:wv6ZMxLeQ70fcqp_biHqK3pwkoTiRj_cyp_ZihrL52M	2022-02-13 17:21:21.814725+08
+2niynsx5m4tr9rtdo710946agxu45vu6	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE6e8:HzP_a6PssIDZw43SKMXUkcWQIB8lXQPng3CCOhwE5TU	2022-02-13 17:37:20.120758+08
+yjhdbzo0wjbqd026eq5rba8umccw7d1x	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE6iV:noY6l-xSi4XwJrk1Lh-N2I_t62OoF2saYRDcitYLcrQ	2022-02-13 17:41:51.110626+08
+z0jyv7ipwz8278wb52gwor1i05iklhl8	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE6ox:ogXidAtRXqEvq5X3LAJCG5qvJnWf-vg4sHQPpPZLKag	2022-02-13 17:48:31.55184+08
+82zu0nx65ikbvaomci52oyarjvpdyqwi	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE70t:Rd2hG-bnZM42tEi2z6gzYjh0vLQLHkblaZ76W-lahBo	2022-02-13 18:00:51.556672+08
+dk2z7x35zfpsbxmra8eutt10iyh453cm	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE739:xrguyjsboGpG2lf0KlWaGmgT8VSc2d5CIF8YMD9CxRc	2022-02-13 18:03:11.3886+08
+r5m2mlt51aepb2cqgbx23dh60binmm35	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE771:zPGH0qkqUSB5y3uskSMP3oIhadFI6q3llSOHuKddlTQ	2022-02-13 18:07:11.131148+08
+zafmq69gossjhcscy21o2nng2jkbi9wv	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE79Z:uUN-SPTWkZWS8YShm84uUkNDYpt-yyvTcLE0Tpr6tbk	2022-02-13 18:09:49.190165+08
+egvwthzn57qebiw8wqyqq2m0hxs3tsjd	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE7QN:dLGKa65mG82dJvoUk3a_n5VgiFUtdGeAQorwaiEN8wA	2022-02-13 18:27:11.393947+08
+eegph2if1vvi44m8fojdz9kdcfrpvu8z	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE7aW:GvFXaNF9Hf0oFG5x9kkGkYbacUbLkyAyRsP1qaC_Eu0	2022-02-13 18:37:40.905371+08
+n6ystbmj0469kgwpu9zeu6p31d07frp8	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE7mu:4bkacA29zsxjd47CjPN0yBLizRnBLp7I4IF7p5fg9i0	2022-02-13 18:50:28.232417+08
+7rc8f9scq27c9vjskmhrq4032sdggf3q	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE7oi:ZoMC0gzSxQ8eDEvJUJ_H5hqJu2rA91CwJQ7UNgDAEx4	2022-02-13 18:52:20.143763+08
+jw8t0lmt8klq2ots5nwbkyrr48s3zzhp	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE7r5:G86mlzbgUI9N5xvL9Sd8hq_pzEWcZBR5XZfAJXr46fc	2022-02-13 18:54:47.837438+08
+09tavik9p18flk9iqxlnwyeuz0fgq5q6	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE7s5:A41yTtci8J3e6n4DiFstrLm0B9moTqttLlBL45AqkaM	2022-02-13 18:55:49.51616+08
+2uw1h4nsic584pymafe2fu6yf4ylj9ae	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE8OY:6_heMY-aSfMc5CULCkH1K546po8-Gbdm_z_Nw7EDZlk	2022-02-13 19:29:22.634948+08
+h6lammdadqr3wu8junhxcmjf9e4192sf	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nEHEz:eI6kttzRbfadecrX2eSqIzXG3KNr-9UF4pRWHR_73y8	2022-02-14 04:56:05.948973+08
 \.
 
 
@@ -1054,7 +1313,7 @@ COPY public.shop_brand (id, name) FROM stdin;
 -- Data for Name: shop_cart; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_cart (id, total_costs, is_ordered, order_date, customer_id) FROM stdin;
+COPY public.shop_cart (id, total_costs, ordered_date, customer_id) FROM stdin;
 \.
 
 
@@ -1086,7 +1345,32 @@ COPY public.shop_category (id, name) FROM stdin;
 -- Data for Name: shop_customer; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_customer (id, first_name, last_name, gender, email, phone_number, credit_card_number, account_name, account_type, address, date_of_birth, password) FROM stdin;
+COPY public.shop_customer (id, gender, email, phone_number, credit_card_number, account_type, date_of_birth, password, name, token) FROM stdin;
+1	\N	test@gmail.com	\N	\N	Normal	\N	123	Alice	\N
+3	\N	test3@test.com	0900000000	\N	Normal	2022-01-31	11111111	Bob	\N
+2	\N	test2@test.com	\N	\N	Normal	\N	11111111	Jamison	TTjCnNvwJQM44EYj4GXLXLWwTuCB0ILbBu5sfeMV7kL9xSKreqbbepJSacbIlkbP
+\.
+
+
+--
+-- Data for Name: shop_favorite_item; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.shop_favorite_item (id, customer_id, product_id) FROM stdin;
+54	2	31
+42	2	24
+\.
+
+
+--
+-- Data for Name: shop_inventory; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.shop_inventory (id, color_id, size_id, inventory, quantity_sold, product_id) FROM stdin;
+4	1	3	11	1	32
+5	1	4	22	12	32
+6	1	5	12	2	32
+7	2	3	21	1	32
 \.
 
 
@@ -1094,7 +1378,7 @@ COPY public.shop_customer (id, first_name, last_name, gender, email, phone_numbe
 -- Data for Name: shop_payment; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_payment (id, type, amount, done_date, cart_id, customer_id) FROM stdin;
+COPY public.shop_payment (id, type, final_costs, paid_date, cart_id, customer_id, address, arrived_date, picked_up_date, shipped_date) FROM stdin;
 \.
 
 
@@ -1102,34 +1386,34 @@ COPY public.shop_payment (id, type, amount, done_date, cart_id, customer_id) FRO
 -- Data for Name: shop_product; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_product (id, name, unit_price, description, brand_id, category_id, inventory, quantity_sold) FROM stdin;
-32	Jeans zw premium high waist ciga	45		5	7	5	5
-24	Basic asymmetrical t-shirt	34	Tall black leather boots. Maxi-fringing detail on the back. Pointed toes. Soft leg.  Fits skirts and dresses.	5	4	10	25
-25	Check shirt	26	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts. Height of model: 175	5	4	12	32
-26	Contrast metallic shirt	40	Coat with a collar with flaps. Long Sleeve. Indoor pockets on the seam line on the sides. Fastening to the indoor latch at the front.  Height of model: 178	5	4	1	23
-30	High-heel leather boots	60	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	4	45	0
-34	Soft leather high-heel boots	75	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4	12	78
-35	Minimal collection long dress	44	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	5	26	16
-31	Hooded coat	53	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	6	4	5
-23	Basic asymmetrical t-shirt	34	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	4	0	1
-22	Basic asymmetrical t-shirt	34	Round neck T-shirt with short sleeves. Features a photographic print with bead appliques. Fashion has always been so temporary and uncertain. You can’t keep up with it? This social phenomenon is very whimsical.	5	4	3	12
-27	Fleece jacket	34	Lorem ipsum dolor sit amet conse ctetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.	5	6	30	30
-28	Flowing bomber jacket	40	Round neck T-shirt with short sleeves. Features a photographic print with bead appliques. Fashion has always been so temporary and uncertain. You can’t keep up with it?	5	6	15	51
-29	Frock coat with zips	47	Mustard yellow crossbody bag in contrasting materials. Split suede foldover flap and front body. Gold metal hardware. Long adjustable strap. Lined interior. Round metal piece for fastening.	5	6	16	6
-17	Short check trench coat	73	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	6	0	18
-12	Leather belt with square buckle	25		5	4	5	20
-13	Mirror lens cat eye sunglasses	40	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	4	13	14
-14	Oversized poplin shirt	54	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	4	25	3
-15	Round neck sweater	35	Mustard yellow crossbody bag in contrasting materials. Split suede foldover flap and front body. Gold metal hardware. Long adjustable strap. Lined interior. Round metal piece for fastening.	5	9	3	45
-16	Scalloped leather court shoes	55	Flat shoes are available in several colors. Tassel details on the front. Fit perfectly for daily use. Stylish and attractive.	5	4	1	1
-18	Soft faux fur coat	90	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	6	3	17
-19	Stretch t-shirt	25	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	10	15	1
-20	Textured faux shearling coat	75	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	6	2	28
-21	Z1975 metallic jeans	45	Round neck T-shirt with short sleeves. Features a photographic print with bead appliques. Fashion has always been so temporary and uncertain. You can’t keep up with it? This social phenomenon is very whimsical.	5	7	30	37
-33	Ribbed knit sweater	44	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	9	6	7
-36	Check asymmetric mini skirt	34	Flat shoes are available in several colors. Tassel details on the front. Fit perfectly for daily use. Stylish and attractive.	5	5	4	15
-37	Leather stiletto-heel ankle boot	57	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4	19	3
-38	Leather strappy high-heel sandal	30	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4	14	0
+COPY public.shop_product (id, name, unit_price, description, brand_id, category_id) FROM stdin;
+32	Jeans zw premium high waist ciga	45		5	7
+24	Basic asymmetrical t-shirt	34	Tall black leather boots. Maxi-fringing detail on the back. Pointed toes. Soft leg.  Fits skirts and dresses.	5	4
+25	Check shirt	26	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts. Height of model: 175	5	4
+26	Contrast metallic shirt	40	Coat with a collar with flaps. Long Sleeve. Indoor pockets on the seam line on the sides. Fastening to the indoor latch at the front.  Height of model: 178	5	4
+30	High-heel leather boots	60	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	4
+34	Soft leather high-heel boots	75	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4
+35	Minimal collection long dress	44	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	5
+31	Hooded coat	53	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	6
+23	Basic asymmetrical t-shirt	34	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	4
+22	Basic asymmetrical t-shirt	34	Round neck T-shirt with short sleeves. Features a photographic print with bead appliques. Fashion has always been so temporary and uncertain. You can’t keep up with it? This social phenomenon is very whimsical.	5	4
+27	Fleece jacket	34	Lorem ipsum dolor sit amet conse ctetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.	5	6
+28	Flowing bomber jacket	40	Round neck T-shirt with short sleeves. Features a photographic print with bead appliques. Fashion has always been so temporary and uncertain. You can’t keep up with it?	5	6
+29	Frock coat with zips	47	Mustard yellow crossbody bag in contrasting materials. Split suede foldover flap and front body. Gold metal hardware. Long adjustable strap. Lined interior. Round metal piece for fastening.	5	6
+17	Short check trench coat	73	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	6
+12	Leather belt with square buckle	25		5	4
+13	Mirror lens cat eye sunglasses	40	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	4
+14	Oversized poplin shirt	54	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	4
+15	Round neck sweater	35	Mustard yellow crossbody bag in contrasting materials. Split suede foldover flap and front body. Gold metal hardware. Long adjustable strap. Lined interior. Round metal piece for fastening.	5	9
+16	Scalloped leather court shoes	55	Flat shoes are available in several colors. Tassel details on the front. Fit perfectly for daily use. Stylish and attractive.	5	4
+18	Soft faux fur coat	90	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	6
+19	Stretch t-shirt	25	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	10
+20	Textured faux shearling coat	75	Loose-fitting T-shirt with V-neckline and short sleeves. Fits perfectly basic pants and skirts. Care for fiber: TENCEL Lyocell.	5	6
+21	Z1975 metallic jeans	45	Round neck T-shirt with short sleeves. Features a photographic print with bead appliques. Fashion has always been so temporary and uncertain. You can’t keep up with it? This social phenomenon is very whimsical.	5	7
+33	Ribbed knit sweater	44	Ladies’ black ballerinas, made of high-quality nubuck and patent leather, are an exceptional version of a classic cut. Concealed wedge heels give an original character to the ballerinas.	5	9
+36	Check asymmetric mini skirt	34	Flat shoes are available in several colors. Tassel details on the front. Fit perfectly for daily use. Stylish and attractive.	5	5
+37	Leather stiletto-heel ankle boot	57	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4
+38	Leather strappy high-heel sandal	30	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4
 \.
 
 
@@ -1137,7 +1421,82 @@ COPY public.shop_product (id, name, unit_price, description, brand_id, category_
 -- Data for Name: shop_product_picture; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_product_picture (id, product_id, picture) FROM stdin;
+COPY public.shop_product_picture (id, product_id, picture, specification_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: shop_product_specification; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.shop_product_specification (id, "group", detail, product_id) FROM stdin;
+1	color	blue	32
+2	color	black	32
+3	size	S	32
+4	size	M	32
+5	size	L	32
+6	size	XL	32
+7	color	white	24
+8	color	pink	24
+9	color	black	24
+10	size	S	24
+11	size	M	24
+12	size	L	24
+13	size	M	25
+14	color	white	25
+15	size	M	26
+16	size	L	26
+17	color	black	26
+18	size	7	30
+19	size	7.5	30
+20	size	8	30
+21	size	8.5	30
+22	size	9	30
+23	size	M	34
+24	color	brown	34
+25	size	M	35
+26	color	white	35
+27	size	L	31
+28	color	brown	31
+29	size	S	23
+30	color	blue	23
+31	color	green	23
+32	size	XL	22
+33	color	red	22
+34	color	brown	27
+35	size	L	28
+36	color	black	28
+37	size	XL	28
+38	color	black	29
+39	size	XL	29
+40	color	gray	17
+41	size	XL	17
+42	color	black	12
+43	size	default	12
+44	color	default	13
+45	size	default	13
+46	color	white	14
+47	size	XL	14
+48	color	white	15
+49	size	M	15
+50	color	black	16
+51	size	7	16
+52	color	white	18
+53	size	L	18
+54	color	blue	19
+55	size	M	19
+56	color	white	20
+57	size	XL	20
+58	color	blue	21
+59	size	M	21
+60	color	gray	33
+61	size	L	33
+62	color	pink	36
+63	size	S	36
+64	color	brown	37
+65	size	8	37
+66	color	black	38
+67	size	8	38
 \.
 
 
@@ -1159,7 +1518,7 @@ SELECT pg_catalog.setval('public.auth_group_permissions_id_seq', 1, false);
 -- Name: auth_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_permission_id_seq', 56, true);
+SELECT pg_catalog.setval('public.auth_permission_id_seq', 68, true);
 
 
 --
@@ -1187,21 +1546,21 @@ SELECT pg_catalog.setval('public.auth_user_user_permissions_id_seq', 1, false);
 -- Name: django_admin_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_admin_log_id_seq', 90, true);
+SELECT pg_catalog.setval('public.django_admin_log_id_seq', 185, true);
 
 
 --
 -- Name: django_content_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_content_type_id_seq', 14, true);
+SELECT pg_catalog.setval('public.django_content_type_id_seq', 17, true);
 
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 26, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 44, true);
 
 
 --
@@ -1236,7 +1595,21 @@ SELECT pg_catalog.setval('public.shop_category_id_seq', 10, true);
 -- Name: shop_customer_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.shop_customer_id_seq', 1, false);
+SELECT pg_catalog.setval('public.shop_customer_id_seq', 3, true);
+
+
+--
+-- Name: shop_favorite_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.shop_favorite_item_id_seq', 54, true);
+
+
+--
+-- Name: shop_inventory_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.shop_inventory_id_seq', 7, true);
 
 
 --
@@ -1258,6 +1631,13 @@ SELECT pg_catalog.setval('public.shop_product_id_seq', 38, true);
 --
 
 SELECT pg_catalog.setval('public.shop_product_picture_id_seq', 1, false);
+
+
+--
+-- Name: shop_product_specification_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.shop_product_specification_id_seq', 67, true);
 
 
 --
@@ -1429,11 +1809,11 @@ ALTER TABLE ONLY public.shop_category
 
 
 --
--- Name: shop_customer shop_customer_account_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: shop_customer shop_customer_email_d3fdf104_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.shop_customer
-    ADD CONSTRAINT shop_customer_account_name_key UNIQUE (account_name);
+    ADD CONSTRAINT shop_customer_email_d3fdf104_uniq UNIQUE (email);
 
 
 --
@@ -1445,11 +1825,51 @@ ALTER TABLE ONLY public.shop_customer
 
 
 --
--- Name: shop_payment shop_payment_customer_id_cart_id_9bfb3add_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: shop_customer shop_customer_token_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_customer
+    ADD CONSTRAINT shop_customer_token_key UNIQUE (token);
+
+
+--
+-- Name: shop_favorite_item shop_favorite_item_customer_id_product_id_41ce4777_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_favorite_item
+    ADD CONSTRAINT shop_favorite_item_customer_id_product_id_41ce4777_uniq UNIQUE (customer_id, product_id);
+
+
+--
+-- Name: shop_favorite_item shop_favorite_item_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_favorite_item
+    ADD CONSTRAINT shop_favorite_item_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: shop_inventory shop_inventory_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_inventory
+    ADD CONSTRAINT shop_inventory_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: shop_inventory shop_inventory_product_id_color_size_f6ebd228_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_inventory
+    ADD CONSTRAINT shop_inventory_product_id_color_size_f6ebd228_uniq UNIQUE (product_id, color_id, size_id);
+
+
+--
+-- Name: shop_payment shop_payment_cart_id_f43cf12d_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.shop_payment
-    ADD CONSTRAINT shop_payment_customer_id_cart_id_9bfb3add_uniq UNIQUE (customer_id, cart_id);
+    ADD CONSTRAINT shop_payment_cart_id_f43cf12d_uniq UNIQUE (cart_id);
 
 
 --
@@ -1474,6 +1894,22 @@ ALTER TABLE ONLY public.shop_product_picture
 
 ALTER TABLE ONLY public.shop_product
     ADD CONSTRAINT shop_product_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: shop_product_specification shop_product_specificati_product_id_group_detail_14aedbca_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_product_specification
+    ADD CONSTRAINT shop_product_specificati_product_id_group_detail_14aedbca_uniq UNIQUE (product_id, "group", detail);
+
+
+--
+-- Name: shop_product_specification shop_product_specification_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_product_specification
+    ADD CONSTRAINT shop_product_specification_pkey PRIMARY KEY (id);
 
 
 --
@@ -1589,17 +2025,52 @@ CREATE INDEX shop_cart_item_product_id_c640b838 ON public.shop_cart_item USING b
 
 
 --
--- Name: shop_customer_account_name_58dab058_like; Type: INDEX; Schema: public; Owner: postgres
+-- Name: shop_customer_email_d3fdf104_like; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX shop_customer_account_name_58dab058_like ON public.shop_customer USING btree (account_name varchar_pattern_ops);
+CREATE INDEX shop_customer_email_d3fdf104_like ON public.shop_customer USING btree (email varchar_pattern_ops);
 
 
 --
--- Name: shop_payment_cart_id_f43cf12d; Type: INDEX; Schema: public; Owner: postgres
+-- Name: shop_customer_token_8bd9a9bf_like; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX shop_payment_cart_id_f43cf12d ON public.shop_payment USING btree (cart_id);
+CREATE INDEX shop_customer_token_8bd9a9bf_like ON public.shop_customer USING btree (token varchar_pattern_ops);
+
+
+--
+-- Name: shop_favorite_item_customer_id_8fad2bf4; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_favorite_item_customer_id_8fad2bf4 ON public.shop_favorite_item USING btree (customer_id);
+
+
+--
+-- Name: shop_favorite_item_product_id_ef38feba; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_favorite_item_product_id_ef38feba ON public.shop_favorite_item USING btree (product_id);
+
+
+--
+-- Name: shop_inventory_color_id_9bae196d; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_inventory_color_id_9bae196d ON public.shop_inventory USING btree (color_id);
+
+
+--
+-- Name: shop_inventory_product_id_17905599; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_inventory_product_id_17905599 ON public.shop_inventory USING btree (product_id);
+
+
+--
+-- Name: shop_inventory_size_id_fd814fbc; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_inventory_size_id_fd814fbc ON public.shop_inventory USING btree (size_id);
 
 
 --
@@ -1628,6 +2099,20 @@ CREATE INDEX shop_product_category_id_14d7eea8 ON public.shop_product USING btre
 --
 
 CREATE INDEX shop_product_picture_product_id_5a50a7ab ON public.shop_product_picture USING btree (product_id);
+
+
+--
+-- Name: shop_product_picture_specification_id_8fc25708; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_product_picture_specification_id_8fc25708 ON public.shop_product_picture USING btree (specification_id);
+
+
+--
+-- Name: shop_product_specification_product_id_dfbb6a87; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_product_specification_product_id_dfbb6a87 ON public.shop_product_specification USING btree (product_id);
 
 
 --
@@ -1727,6 +2212,46 @@ ALTER TABLE ONLY public.shop_cart_item
 
 
 --
+-- Name: shop_favorite_item shop_favorite_item_customer_id_8fad2bf4_fk_shop_customer_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_favorite_item
+    ADD CONSTRAINT shop_favorite_item_customer_id_8fad2bf4_fk_shop_customer_id FOREIGN KEY (customer_id) REFERENCES public.shop_customer(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: shop_favorite_item shop_favorite_item_product_id_ef38feba_fk_shop_product_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_favorite_item
+    ADD CONSTRAINT shop_favorite_item_product_id_ef38feba_fk_shop_product_id FOREIGN KEY (product_id) REFERENCES public.shop_product(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: shop_inventory shop_inventory_color_id_9bae196d_fk_shop_prod; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_inventory
+    ADD CONSTRAINT shop_inventory_color_id_9bae196d_fk_shop_prod FOREIGN KEY (color_id) REFERENCES public.shop_product_specification(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: shop_inventory shop_inventory_product_id_17905599_fk_shop_product_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_inventory
+    ADD CONSTRAINT shop_inventory_product_id_17905599_fk_shop_product_id FOREIGN KEY (product_id) REFERENCES public.shop_product(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: shop_inventory shop_inventory_size_id_fd814fbc_fk_shop_prod; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_inventory
+    ADD CONSTRAINT shop_inventory_size_id_fd814fbc_fk_shop_prod FOREIGN KEY (size_id) REFERENCES public.shop_product_specification(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: shop_payment shop_payment_cart_id_f43cf12d_fk_shop_cart_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1764,6 +2289,22 @@ ALTER TABLE ONLY public.shop_product
 
 ALTER TABLE ONLY public.shop_product_picture
     ADD CONSTRAINT shop_product_picture_product_id_5a50a7ab_fk_shop_product_id FOREIGN KEY (product_id) REFERENCES public.shop_product(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: shop_product_picture shop_product_picture_specification_id_8fc25708_fk_shop_prod; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_product_picture
+    ADD CONSTRAINT shop_product_picture_specification_id_8fc25708_fk_shop_prod FOREIGN KEY (specification_id) REFERENCES public.shop_product_specification(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: shop_product_specification shop_product_specifi_product_id_dfbb6a87_fk_shop_prod; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_product_specification
+    ADD CONSTRAINT shop_product_specifi_product_id_dfbb6a87_fk_shop_prod FOREIGN KEY (product_id) REFERENCES public.shop_product(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --

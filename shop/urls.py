@@ -4,7 +4,8 @@ from . import product_view
 from . import category_view
 from . import search_result_view
 from . import account_view
-from . import item_view
+from . import favorites_view
+from . import cart_view
 
 urlpatterns = [
     path(
@@ -28,5 +29,6 @@ urlpatterns = [
     path("login", account_view.login),
     path("logout", account_view.logout),
     path("register", account_view.register),
-    path("favorites", item_view.favorites),
+    path("favorites", favorites_view.index),
+    path("cart", cart_view.index),
 ]

@@ -9,7 +9,8 @@ from .models import (
     customer,
     cart,
     cart_item,
-    payment,
+    order,
+    order_item,
     favorite_item,
 )
 
@@ -22,5 +23,6 @@ admin.site.register(inventory)
 admin.site.register(customer)
 admin.site.register(cart)
 admin.site.register(cart_item)
-admin.site.register(payment)
+admin.site.register(order)
+admin.site.register(order_item)
 admin.site.register(favorite_item)
