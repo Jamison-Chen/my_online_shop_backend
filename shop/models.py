@@ -117,6 +117,7 @@ class cart(models.Model):
     customer = models.OneToOneField(customer, on_delete=models.CASCADE)
     products = models.ManyToManyField(inventory, through="cart_item")
     total_costs = models.FloatField(default=0.0)  # sum of all subtotals
+    freight = models.FloatField(default=5.0)
 
     def __str__(self):
         return "{}'s cart".format(self.customer.name)
@@ -124,7 +125,7 @@ class cart(models.Model):
 
 class cart_item(models.Model):
     inventory = models.ForeignKey(inventory, on_delete=DO_NOTHING)
-    cart = models.ForeignKey(cart, on_delete=models.CASCADE)
+    cart = models.ForeignKey(cart, on_delete=models.CASCADE, related_name="items")
     quantity = models.PositiveBigIntegerField()
     subtotal_costs = models.FloatField()
 
@@ -147,7 +148,7 @@ class order(models.Model):
     inventories = models.ManyToManyField(inventory, through="order_item")
     address = models.CharField(max_length=128)
     type = models.CharField(max_length=32, choices=typeChoices)
-    final_costs = models.FloatField()  # total costs - coupon + delivery fee
+    final_costs = models.FloatField()  # total costs - coupon + freight
     ordered_date = models.DateTimeField(blank=True, null=True)  # blank if not ordered
     paid_date = models.DateTimeField(default=timezone.now)
     shipped_date = models.DateTimeField(blank=True, null=True)  # blank if not shipped
