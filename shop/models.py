@@ -145,22 +145,35 @@ class order(models.Model):
     typeChoices = [(COD, COD), (ISP, ISP), (HD, HD)]
 
     customer = models.ForeignKey(customer, on_delete=DO_NOTHING)
+    name_of_picker = models.CharField(max_length=64)
+    phone_number_of_picker = models.CharField(max_length=32)
     inventories = models.ManyToManyField(inventory, through="order_item")
-    address = models.CharField(max_length=128)
     type = models.CharField(max_length=32, choices=typeChoices)
-    final_costs = models.FloatField()  # total costs - coupon + freight
-    ordered_date = models.DateTimeField(blank=True, null=True)  # blank if not ordered
-    paid_date = models.DateTimeField(default=timezone.now)
+    address = models.CharField(max_length=128)
+    final_costs = models.FloatField()  # sum(subtotal) - coupon + freight
+    ordered_date = models.DateTimeField(default=timezone.now)
+    paid_date = models.DateTimeField(blank=True, null=True)  # blank if not paid
     shipped_date = models.DateTimeField(blank=True, null=True)  # blank if not shipped
     arrived_date = models.DateTimeField(blank=True, null=True)  # blank if not arrived
     picked_up_date = models.DateTimeField(blank=True, null=True)  # blank if not picked
 
+    def __str__(self):
+        return "{}'s cart".format(self.customer.name)
+
 
 class order_item(models.Model):
     inventory = models.ForeignKey(inventory, on_delete=DO_NOTHING)
-    order = models.ForeignKey(order, on_delete=models.CASCADE)
+    order = models.ForeignKey(order, on_delete=models.CASCADE, related_name="items")
     quantity = models.PositiveBigIntegerField()
     subtotal_costs = models.FloatField()
+
+    def __str__(self):
+        return "item in {}: {} (q={}, subtotal={})".format(
+            self.order, self.inventory, self.quantity, self.subtotal_costs
+        )
+
+    class Meta:
+        unique_together = ["inventory", "order"]
 
 
 class favorite_item(models.Model):

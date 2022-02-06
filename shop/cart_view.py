@@ -50,21 +50,22 @@ def index(request):
                 crt.total_costs = newTotalCosts
                 crt.freight = 60 if newTotalCosts < 100 else 0
                 crt.save()
-                res["data"] = {"total_costs": crt.total_costs, "freight": crt.freight}
                 res["status"] = "succeeded"
             else:
-                res["data"] = {
-                    "total_costs": crt.total_costs,
-                    "freight": crt.freight,
-                }
                 res["status"] = "inventory not sufficient"
+            res["data"] = {
+                "total_costs": crt.total_costs,
+                "freight": crt.freight,
+                "count": crt.items.all().count(),
+            }
         elif operation == "read":
-            res["data"] = {"total_costs": 0, "cart_items": []}
+            res["data"] = {"total_costs": 0, "freight": 0, "count": 0, "cart_items": []}
             crt = cart.objects.filter(customer__token=token)
             if crt:
                 crt = crt[0]
                 res["data"]["total_costs"] = crt.total_costs
                 res["data"]["freight"] = crt.freight
+                res["data"]["count"] = crt.items.all().count()
                 for eachItem in crt.items.all():
                     res["data"]["cart_items"].append(
                         {
@@ -81,11 +82,15 @@ def index(request):
         elif operation == "delete":
             crt = customer.objects.get(token=token).cart
             citm = crt.items.get(id=request.POST.get("cart_item_id")).delete()
-            newTotalCosts = crt.items.all().aggregate(t=Sum("subtotal_costs"))["t"]
+            newTotalCosts = crt.items.all().aggregate(t=Sum("subtotal_costs"))["t"] or 0
             crt.total_costs = newTotalCosts
-            crt.freight = 60 if newTotalCosts < 100 else 0
+            crt.freight = 60 if newTotalCosts < 100 and newTotalCosts != 0 else 0
             crt.save()
-            res["data"] = {"total_costs": crt.total_costs, "freight": crt.freight}
+            res["data"] = {
+                "total_costs": crt.total_costs,
+                "freight": crt.freight,
+                "count": crt.items.all().count(),
+            }
             res["status"] = "succeeded"
         else:
             return HttpResponseNotFound()
