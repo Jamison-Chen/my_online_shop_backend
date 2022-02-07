@@ -29,6 +29,8 @@ def login(request):
             res["status"] = "passed"
             q = q.get()
             res["data"]["name"] = q.name
+            res["data"]["email"] = q.email
+            res["data"]["phone_number"] = q.phone_number
             res = JsonResponse(res)
         else:
             email = request.POST.get("email", default=None)
