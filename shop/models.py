@@ -118,6 +118,7 @@ class cart(models.Model):
     products = models.ManyToManyField(inventory, through="cart_item")
     total_costs = models.FloatField(default=0.0)  # sum of all subtotals
     freight = models.FloatField(default=5.0)
+    ready_to_checkout = models.BooleanField(default=False)
 
     def __str__(self):
         return "{}'s cart".format(self.customer.name)
@@ -144,7 +145,7 @@ class order(models.Model):
     HD = "Home Delivery"
     typeChoices = [(COD, COD), (ISP, ISP), (HD, HD)]
 
-    customer = models.ForeignKey(customer, on_delete=DO_NOTHING)
+    customer = models.ForeignKey(customer, on_delete=DO_NOTHING, related_name="orders")
     name_of_picker = models.CharField(max_length=64)
     phone_number_of_picker = models.CharField(max_length=32)
     inventories = models.ManyToManyField(inventory, through="order_item")
@@ -158,7 +159,7 @@ class order(models.Model):
     picked_up_date = models.DateTimeField(blank=True, null=True)  # blank if not picked
 
     def __str__(self):
-        return "{}'s cart".format(self.customer.name)
+        return "{}'s order".format(self.customer.name)
 
 
 class order_item(models.Model):

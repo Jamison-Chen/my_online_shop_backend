@@ -1,7 +1,4 @@
-from django.http import (
-    JsonResponse,
-    HttpResponseNotFound,
-)
+from django.http import HttpResponseServerError, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt
 from .my_decorators import cors_exempt
 from .models import customer, cart_item, inventory, cart
@@ -48,7 +45,7 @@ def index(request):
             if invIsSufficient:
                 newTotalCosts = crt.items.all().aggregate(t=Sum("subtotal_costs"))["t"]
                 crt.total_costs = newTotalCosts
-                crt.freight = 60 if newTotalCosts < 100 else 0
+                crt.freight = 5.0 if newTotalCosts < 100 else 0.0
                 crt.save()
                 res["status"] = "succeeded"
             else:
@@ -84,7 +81,7 @@ def index(request):
             citm = crt.items.get(id=request.POST.get("cart_item_id")).delete()
             newTotalCosts = crt.items.all().aggregate(t=Sum("subtotal_costs"))["t"] or 0
             crt.total_costs = newTotalCosts
-            crt.freight = 60 if newTotalCosts < 100 and newTotalCosts != 0 else 0
+            crt.freight = 5.0 if newTotalCosts < 100 and newTotalCosts != 0 else 0.0
             crt.save()
             res["data"] = {
                 "total_costs": crt.total_costs,
@@ -96,5 +93,23 @@ def index(request):
             return HttpResponseNotFound()
         res = JsonResponse(res)
         return res
+    else:
+        return HttpResponseNotFound()
+
+
+@csrf_exempt
+@cors_exempt
+def proceedToCheckout(request):
+    if request.method == "GET":
+        try:
+            token = request.COOKIES.get("token", "")
+            crt = customer.objects.get(token=token).cart
+            crt.ready_to_checkout = True
+            crt.save()
+            res = {"status": "succeeded"}
+            res = JsonResponse(res)
+            return res
+        except:
+            return HttpResponseServerError()
     else:
         return HttpResponseNotFound()

@@ -6,6 +6,7 @@ from . import search_result_view
 from . import account_view
 from . import favorites_view
 from . import cart_view
+from . import order_view
 
 urlpatterns = [
     path(
@@ -30,5 +31,14 @@ urlpatterns = [
     path("logout", account_view.logout),
     path("register", account_view.register),
     path("favorites", favorites_view.index),
-    path("cart", cart_view.index),
+    path(
+        "cart/",
+        include(
+            [
+                path("", cart_view.index),
+                path("proceed_to_checkout", cart_view.proceedToCheckout),
+            ]
+        ),
+    ),
+    path("order", order_view.index),
 ]
