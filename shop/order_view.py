@@ -51,6 +51,9 @@ def index(request):
                     quantity=each.quantity,
                     subtotal_costs=each.subtotal_costs,
                 )
+                each.inventory.inventory -= each.quantity
+                each.inventory.quantity_sold += each.quantity
+                each.inventory.save()
             cstmr.cart.delete()
             res["status"] = "succeeded"
         elif operation == "read":
@@ -60,6 +63,7 @@ def index(request):
                 "freight": 0,
                 "order_items": [],
             }
+            res["status"] = "succeeded"
             # crt = cart.objects.filter(customer__token=token)
             # if crt:
             #     crt = crt[0]
