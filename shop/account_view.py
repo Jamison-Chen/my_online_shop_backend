@@ -120,3 +120,31 @@ def register(request):
         return res
     else:
         return HttpResponseNotFound()
+
+
+@csrf_exempt
+@cors_exempt
+def changePassword(request):
+    res = {"status": ""}
+    token = request.COOKIES.get("token", "")
+    q = customer.objects.filter(token=token)
+    currentPassword = request.POST.get("current-password", default="")
+    if token != "" and len(q) == 1:
+        q = q.get()
+        if q.password == currentPassword:
+            newPassword = request.POST.get("new-password", default="")
+            newPwdCheck = request.POST.get("new-password-check", default="")
+            if len(newPassword) < 8:
+                res["status"] = "password too simple"
+            elif newPassword != newPwdCheck:
+                res["status"] = "check your password"
+            else:
+                q.password = newPassword
+                q.save()
+                res["status"] = "succeeded"
+        else:
+            res["status"] = "wrong password"
+    else:
+        res["status"] = "user not found"
+    res = JsonResponse(res)
+    return res

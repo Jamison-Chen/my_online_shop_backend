@@ -30,6 +30,7 @@ urlpatterns = [
     path("login", account_view.login),
     path("logout", account_view.logout),
     path("register", account_view.register),
+    path("change-password", account_view.changePassword),
     path("favorites", favorites_view.index),
     path(
         "cart/",
