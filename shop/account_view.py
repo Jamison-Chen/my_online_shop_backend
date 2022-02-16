@@ -1,4 +1,3 @@
-from datetime import date
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.middleware import csrf

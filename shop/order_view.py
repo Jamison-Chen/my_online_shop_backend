@@ -1,8 +1,9 @@
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponseServerError
 from django.views.decorators.csrf import csrf_exempt
 from .my_decorators import cors_exempt
-from .models import customer, order, inventory, order_item, cart_item
-from django.db.models import Sum
+from .models import customer, order, order_item
+
+# from django.db.models import Sum
 
 
 @csrf_exempt
@@ -57,45 +58,38 @@ def index(request):
             cstmr.cart.delete()
             res["status"] = "succeeded"
         elif operation == "read":
-            res["data"] = {
-                "status": "processing",
-                "total_costs": 0,
-                "freight": 0,
-                "order_items": [],
-            }
-            res["status"] = "succeeded"
-            # crt = cart.objects.filter(customer__token=token)
-            # if crt:
-            #     crt = crt[0]
-            #     res["data"]["total_costs"] = crt.total_costs
-            #     res["data"]["freight"] = crt.freight
-            #     res["data"]["count"] = crt.items.all().count()
-            #     for eachItem in crt.items.all():
-            #         res["data"]["cart_items"].append(
-            #             {
-            #                 "cart_item_id": eachItem.id,
-            #                 "product_id": eachItem.inventory.product.id,
-            #                 "product_name": eachItem.inventory.product.name,
-            #                 "color": eachItem.inventory.color.detail,
-            #                 "size": eachItem.inventory.size.detail,
-            #                 "unit_price": eachItem.inventory.product.unit_price,
-            #                 "quantity": eachItem.quantity,
-            #                 "subtotal_costs": eachItem.subtotal_costs,
-            #             }
-            #         )
+            res["data"] = []
+            odrs = order.objects.filter(customer__token=token).order_by("ordered_date")
+            for eachOrder in odrs:
+                orderData = {
+                    "id": str(eachOrder.id),
+                    "name_of_picker": eachOrder.name_of_picker,
+                    "phone_number_of_picker": eachOrder.phone_number_of_picker,
+                    "payment_method": eachOrder.type,
+                    "address": eachOrder.address,
+                    "final_cost": eachOrder.final_costs,
+                    "ordered_date": eachOrder.ordered_date,
+                    "paid_date": eachOrder.paid_date,
+                    "shipped_date": eachOrder.shipped_date,
+                    "arrived_date": eachOrder.arrived_date,
+                    "picked_up_date": eachOrder.picked_up_date,
+                    "items": [],
+                }
+                for eachItem in eachOrder.items.all():
+                    orderData["items"].append(
+                        {
+                            "product_name": eachItem.inventory.product.name,
+                            "product_specification": "color:{}/size:{}".format(
+                                eachItem.inventory.color.detail,
+                                eachItem.inventory.size.detail,
+                            ),
+                            "quantity": eachItem.quantity,
+                            "subtotal_costs": eachItem.subtotal_costs,
+                        }
+                    )
+                res["data"].append(orderData)
         elif operation == "delete":
-            # crt = customer.objects.get(token=token).cart
-            # citm = crt.items.get(id=request.POST.get("cart_item_id")).delete()
-            # newTotalCosts = crt.items.all().aggregate(t=Sum("subtotal_costs"))["t"] or 0
-            # crt.total_costs = newTotalCosts
-            # crt.freight = 60 if newTotalCosts < 100 and newTotalCosts != 0 else 0
-            # crt.save()
-            # res["data"] = {
-            #     "total_costs": crt.total_costs,
-            #     "freight": crt.freight,
-            #     "count": crt.items.all().count(),
-            # }
-            res["status"] = "succeeded"
+            pass
         else:
             return HttpResponseNotFound()
         res = JsonResponse(res)
