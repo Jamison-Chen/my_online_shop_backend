@@ -42,7 +42,7 @@ def index(request):
                 phone_number_of_picker=phone,
                 type=request.POST.get("payment_method"),
                 address=address,
-                final_costs=cstmr.cart.total_costs,
+                final_costs=cstmr.cart.total_costs + cstmr.cart.freight,
             )
             for each in cstmr.cart.items.all():
                 order_item.objects.create(

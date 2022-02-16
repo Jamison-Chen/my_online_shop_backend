@@ -1,4 +1,5 @@
-from django.http import JsonResponse, HttpResponseNotFound
+from datetime import date
+from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseNotFound
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.middleware import csrf
 from .my_decorators import cors_exempt
@@ -31,6 +32,9 @@ def login(request):
             res["data"]["name"] = q.name
             res["data"]["email"] = q.email
             res["data"]["phone_number"] = q.phone_number
+            res["data"]["gender"] = q.gender
+            res["data"]["date_of_birth"] = q.date_of_birth
+            res["data"]["account_type"] = q.account_type
             res = JsonResponse(res)
         else:
             email = request.POST.get("email", default=None)
@@ -77,14 +81,14 @@ def register(request):
         name = request.POST.get("name", default="")
         email = request.POST.get("email", default="")
         pwd = request.POST.get("password", default="")
-        pwdCk = request.POST.get("password-check", default="")
+        pwdCk = request.POST.get("password_check", default="")
         if name == "" or email == "" or pwd == "" or pwdCk == "":
             res["status"] = "info not sufficient"
             res = JsonResponse(res)
         elif len(name) > 32:
             res["status"] = "name too long"
             res = JsonResponse(res)
-        elif len(name) < 3:
+        elif len(name) < 2:
             res["status"] = "name too short"
             res = JsonResponse(res)
         elif customer.objects.filter(email=email):
@@ -97,8 +101,8 @@ def register(request):
             res["status"] = "check your password"
             res = JsonResponse(res)
         else:
-            phoneNum = request.POST.get("phone-number")
-            bd = request.POST.get("date-of-birth")
+            phoneNum = request.POST.get("phone_number")
+            bd = request.POST.get("date_of_birth")
             newToken = csrf.get_token(request)
             p = customer.objects.create(
                 name=name,
@@ -124,16 +128,51 @@ def register(request):
 
 @csrf_exempt
 @cors_exempt
+def editProfile(request):
+    res = {"status": ""}
+    token = request.COOKIES.get("token", "")
+    q = customer.objects.filter(token=token)
+    if token != "" and len(q) == 1:
+        name = request.POST.get("name", default="")
+        email = request.POST.get("email", default="")
+        phoneNumber = request.POST.get("phone_number")
+        gender = request.POST.get("gender")
+        dateOfBirth = request.POST.get("date_of_birth")
+        if name == "" or email == "":
+            res["status"] = "info not sufficient"
+        elif len(name) > 32:
+            res["status"] = "name too long"
+        elif len(name) < 2:
+            res["status"] = "name too short"
+        elif customer.objects.filter(email=email) and q.get().email != email:
+            res["status"] = "duplicated email"
+        else:
+            q.update(
+                name=name,
+                email=email,
+                phone_number=phoneNumber,
+                gender=gender,
+                date_of_birth=dateOfBirth,
+            )
+            res["status"] = "succeeded"
+    else:
+        return HttpResponseBadRequest()
+    res = JsonResponse(res)
+    return res
+
+
+@csrf_exempt
+@cors_exempt
 def changePassword(request):
     res = {"status": ""}
     token = request.COOKIES.get("token", "")
     q = customer.objects.filter(token=token)
-    currentPassword = request.POST.get("current-password", default="")
+    currentPassword = request.POST.get("current_password", default="")
     if token != "" and len(q) == 1:
         q = q.get()
         if q.password == currentPassword:
-            newPassword = request.POST.get("new-password", default="")
-            newPwdCheck = request.POST.get("new-password-check", default="")
+            newPassword = request.POST.get("new_password", default="")
+            newPwdCheck = request.POST.get("new_password_check", default="")
             if len(newPassword) < 8:
                 res["status"] = "password too simple"
             elif newPassword != newPwdCheck:
@@ -145,6 +184,6 @@ def changePassword(request):
         else:
             res["status"] = "wrong password"
     else:
-        res["status"] = "user not found"
+        return HttpResponseBadRequest()
     res = JsonResponse(res)
     return res
