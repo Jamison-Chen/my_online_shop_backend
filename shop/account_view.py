@@ -1,8 +1,47 @@
+from django.conf import settings
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseNotFound
+from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.middleware import csrf
 from .my_decorators import cors_exempt
 from .models import customer
+from django.contrib.sites.shortcuts import get_current_site
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_text
+from django.core.mail import EmailMessage
+from .utils import emailVerifyTokenGenerator, EmailThreading
+
+
+def confirmIdentity(userEmail, userPassword):
+    try:
+        q = customer.objects.get(email=userEmail)
+        if q.password == userPassword:
+            if q.is_email_verified:
+                return "passed"
+            return "email not verified"
+        return "wrong password"
+    except:
+        return "user not found"
+
+
+def sendVerificationEmail(request, cstmr):
+    body = render_to_string(
+        "shop/verifyEmail.html",
+        {
+            "customer": cstmr,
+            "domain": get_current_site(request),
+            "cid": urlsafe_base64_encode(force_bytes(cstmr.id)),
+            "token": emailVerifyTokenGenerator.make_token(user=cstmr),
+        },
+    )
+    email = EmailMessage(
+        subject="Activate Your Account",
+        body=body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[cstmr.email],
+    )
+    EmailThreading(email).start()
 
 
 # response.set_cookie("csrftoken", csrf.get_token(request))
@@ -11,16 +50,6 @@ from .models import customer
 @csrf_exempt
 @cors_exempt
 def login(request):
-    def confirmIdentity(userEmail, userPassword):
-        q = customer.objects.filter(email=userEmail)
-        if q:
-            if q.get().password == userPassword:
-                return "passed"
-            else:
-                return "wrong password"
-        else:
-            return "user not found"
-
     if request.method == "POST" or request.method == "OPTIONS":
         res = {"status": "", "data": {}}
         token = request.COOKIES.get("token", "")
@@ -81,6 +110,7 @@ def register(request):
         email = request.POST.get("email", default="")
         pwd = request.POST.get("password", default="")
         pwdCk = request.POST.get("password_check", default="")
+        existingAccount = customer.objects.filter(email=email)
         if name == "" or email == "" or pwd == "" or pwdCk == "":
             res["status"] = "info not sufficient"
             res = JsonResponse(res)
@@ -90,8 +120,8 @@ def register(request):
         elif len(name) < 2:
             res["status"] = "name too short"
             res = JsonResponse(res)
-        elif customer.objects.filter(email=email):
-            res["status"] = "duplicated email"
+        elif existingAccount and existingAccount.get().is_email_verified:
+            res["status"] = "duplicate email"
             res = JsonResponse(res)
         elif len(pwd) < 8:
             res["status"] = "password too simple"
@@ -100,10 +130,12 @@ def register(request):
             res["status"] = "check your password"
             res = JsonResponse(res)
         else:
+            if existingAccount and not (c := existingAccount.get()).is_email_verified:
+                c.delete()
             phoneNum = request.POST.get("phone_number")
             bd = request.POST.get("date_of_birth")
             newToken = csrf.get_token(request)
-            p = customer.objects.create(
+            c = customer.objects.create(
                 name=name,
                 email=email,
                 password=pwd,
@@ -111,15 +143,12 @@ def register(request):
                 phone_number=phoneNum,
                 token=newToken,
             )
+            sendVerificationEmail(request, c)
             res["status"] = "passed"
+            res[
+                "message"
+            ] = "We've just send you an email to verify this account. Please check your email inbox, and then go back here to log in."
             res = JsonResponse(res)
-            res.set_cookie(
-                "token",
-                newToken,
-                max_age=86400,
-                samesite="None",
-                secure=True,
-            )
         return res
     else:
         return HttpResponseNotFound()
@@ -127,33 +156,68 @@ def register(request):
 
 @csrf_exempt
 @cors_exempt
+def resendVerificationEmail(request):
+    if request.method == "POST":
+        res = {"status": "", "message": ""}
+        email = request.POST.get("email", default=None)
+        try:
+            c = customer.objects.get(email=email)
+            sendVerificationEmail(request, c)
+            res["status"] = "succeeded"
+            res[
+                "message"
+            ] = "We've just send you an email to verify this account. Please check your email inbox, and then go back here to log in."
+            res = JsonResponse(res)
+            return res
+        except:
+            return HttpResponseNotFound()
+    else:
+        return HttpResponseBadRequest()
+
+
+@csrf_exempt
+@cors_exempt
 def editProfile(request):
-    res = {"status": ""}
+    res = {"status": "", "message": ""}
     token = request.COOKIES.get("token", "")
     q = customer.objects.filter(token=token)
     if token != "" and len(q) == 1:
-        name = request.POST.get("name", default="")
-        email = request.POST.get("email", default="")
-        phoneNumber = request.POST.get("phone_number")
-        gender = request.POST.get("gender")
-        dateOfBirth = request.POST.get("date_of_birth")
-        if name == "" or email == "":
+        newName = request.POST.get("name", default="")
+        newEmail = request.POST.get("email", default="")
+        newPhoneNumber = request.POST.get("phone_number")
+        newGender = request.POST.get("gender")
+        newDateOfBirth = request.POST.get("date_of_birth")
+        if newName == "" or newEmail == "":
             res["status"] = "info not sufficient"
-        elif len(name) > 32:
+        elif len(newName) > 32:
             res["status"] = "name too long"
-        elif len(name) < 2:
+        elif len(newName) < 2:
             res["status"] = "name too short"
-        elif customer.objects.filter(email=email) and q.get().email != email:
-            res["status"] = "duplicated email"
+        elif q.get().email != newEmail and customer.objects.filter(email=newEmail):
+            res["status"] = "duplicate email"
         else:
-            q.update(
-                name=name,
-                email=email,
-                phone_number=phoneNumber,
-                gender=gender,
-                date_of_birth=dateOfBirth,
-            )
-            res["status"] = "succeeded"
+            if q.get().email != newEmail:
+                q.update(
+                    name=newName,
+                    email=newEmail,
+                    phone_number=newPhoneNumber,
+                    gender=newGender,
+                    date_of_birth=newDateOfBirth,
+                    is_email_verified=False,
+                )
+                sendVerificationEmail(request, q.get())
+                res["status"] = "email not verified"
+                res[
+                    "message"
+                ] = "We've just send you an email to verify this account. Please check your email inbox, and then go back here to log in."
+            else:
+                q.update(
+                    name=newName,
+                    phone_number=newPhoneNumber,
+                    gender=newGender,
+                    date_of_birth=newDateOfBirth,
+                )
+                res["status"] = "succeeded"
     else:
         return HttpResponseBadRequest()
     res = JsonResponse(res)
@@ -186,3 +250,16 @@ def changePassword(request):
         return HttpResponseBadRequest()
     res = JsonResponse(res)
     return res
+
+
+def activateAccount(request, cidb64, token):
+    cid = force_text(urlsafe_base64_decode(cidb64))
+    try:
+        c = customer.objects.get(id=cid)
+        if emailVerifyTokenGenerator.check_token(c, token):
+            c.is_email_verified = True
+            c.save()
+            return render(request, "shop/verificationSucceed.html")
+        return HttpResponseNotFound()
+    except:
+        return HttpResponseNotFound()

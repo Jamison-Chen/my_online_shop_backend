@@ -97,13 +97,13 @@ class customer(models.Model):
 
     name = models.CharField(max_length=64)
     email = models.EmailField(max_length=256, unique=True)
+    is_email_verified = models.BooleanField(default=False)
     password = models.CharField(max_length=32)
     gender = models.CharField(
         max_length=16, choices=genderChoices, blank=True, null=True
     )
     date_of_birth = models.DateField(blank=True, null=True)
     phone_number = models.CharField(max_length=32, blank=True, null=True)
-    credit_card_number = models.CharField(max_length=32, blank=True, null=True)
     account_type = models.CharField(
         max_length=16, choices=accountTypeChoices, default=NORMAL
     )
@@ -125,7 +125,7 @@ class cart(models.Model):
 
 
 class cart_item(models.Model):
-    inventory = models.ForeignKey(inventory, on_delete=DO_NOTHING)
+    inventory = models.ForeignKey(inventory, on_delete=models.CASCADE)
     cart = models.ForeignKey(cart, on_delete=models.CASCADE, related_name="items")
     quantity = models.PositiveBigIntegerField()
     subtotal_costs = models.FloatField()
@@ -145,7 +145,9 @@ class order(models.Model):
     HD = "Home Delivery"
     typeChoices = [(COD, COD), (ISP, ISP), (HD, HD)]
 
-    customer = models.ForeignKey(customer, on_delete=DO_NOTHING, related_name="orders")
+    customer = models.ForeignKey(
+        customer, on_delete=models.CASCADE, related_name="orders"
+    )
     name_of_picker = models.CharField(max_length=64)
     phone_number_of_picker = models.CharField(max_length=32)
     inventories = models.ManyToManyField(inventory, through="order_item")
@@ -163,7 +165,7 @@ class order(models.Model):
 
 
 class order_item(models.Model):
-    inventory = models.ForeignKey(inventory, on_delete=DO_NOTHING)
+    inventory = models.ForeignKey(inventory, on_delete=models.CASCADE)
     order = models.ForeignKey(order, on_delete=models.CASCADE, related_name="items")
     quantity = models.PositiveBigIntegerField()
     subtotal_costs = models.FloatField()
@@ -178,8 +180,8 @@ class order_item(models.Model):
 
 
 class favorite_item(models.Model):
-    customer = models.ForeignKey(customer, on_delete=DO_NOTHING)
-    product = models.ForeignKey(product, on_delete=DO_NOTHING)
+    customer = models.ForeignKey(customer, on_delete=models.CASCADE)
+    product = models.ForeignKey(product, on_delete=models.CASCADE)
 
     def __str__(self):
         return "{} / {}".format(self.customer.name, self.product.name)

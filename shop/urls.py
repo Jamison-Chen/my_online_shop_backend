@@ -30,6 +30,12 @@ urlpatterns = [
     path("login", account_view.login),
     path("logout", account_view.logout),
     path("register", account_view.register),
+    path(
+        "activate-account/<cidb64>/<token>",
+        account_view.activateAccount,
+        name="activate",
+    ),
+    path("resend-verification-email", account_view.resendVerificationEmail),
     path("edit-profile", account_view.editProfile),
     path("change-password", account_view.changePassword),
     path("favorites", favorites_view.index),
