@@ -76,9 +76,9 @@ def login(request):
                 res.set_cookie(
                     "token",
                     newToken,
-                    max_age=86400,
-                    samesite="None",
-                    secure=True,
+                    max_age=settings.CSRF_COOKIE_AGE,
+                    samesite=settings.CSRF_COOKIE_SAMESITE,
+                    secure=settings.CSRF_COOKIE_SECURE,
                 )
         return res
     return HttpResponseNotFound()
