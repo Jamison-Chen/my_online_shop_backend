@@ -399,8 +399,9 @@ ALTER SEQUENCE public.shop_brand_id_seq OWNED BY public.shop_brand.id;
 CREATE TABLE public.shop_cart (
     id bigint NOT NULL,
     total_costs double precision NOT NULL,
-    ordered_date timestamp with time zone,
-    customer_id bigint NOT NULL
+    customer_id bigint NOT NULL,
+    freight double precision NOT NULL,
+    ready_to_checkout boolean NOT NULL
 );
 
 
@@ -436,7 +437,7 @@ CREATE TABLE public.shop_cart_item (
     quantity bigint NOT NULL,
     subtotal_costs double precision NOT NULL,
     cart_id bigint NOT NULL,
-    product_id bigint NOT NULL,
+    inventory_id bigint NOT NULL,
     CONSTRAINT shop_cart_item_quantity_check CHECK ((quantity >= 0))
 );
 
@@ -506,12 +507,12 @@ CREATE TABLE public.shop_customer (
     gender character varying(16),
     email character varying(256) NOT NULL,
     phone_number character varying(32),
-    credit_card_number character varying(32),
     account_type character varying(16) NOT NULL,
     date_of_birth date,
     password character varying(32) NOT NULL,
     name character varying(64) NOT NULL,
-    token character varying(256)
+    token character varying(256),
+    is_email_verified boolean NOT NULL
 );
 
 
@@ -612,24 +613,63 @@ ALTER SEQUENCE public.shop_inventory_id_seq OWNED BY public.shop_inventory.id;
 
 
 --
--- Name: shop_payment; Type: TABLE; Schema: public; Owner: postgres
+-- Name: shop_order; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.shop_payment (
+CREATE TABLE public.shop_order (
     id bigint NOT NULL,
     type character varying(32) NOT NULL,
     final_costs double precision NOT NULL,
-    paid_date timestamp with time zone NOT NULL,
-    cart_id bigint NOT NULL,
+    paid_date timestamp with time zone,
     customer_id bigint NOT NULL,
     address character varying(128) NOT NULL,
     arrived_date timestamp with time zone,
     picked_up_date timestamp with time zone,
-    shipped_date timestamp with time zone
+    shipped_date timestamp with time zone,
+    ordered_date timestamp with time zone NOT NULL,
+    name_of_picker character varying(64) NOT NULL,
+    phone_number_of_picker character varying(32) NOT NULL
 );
 
 
-ALTER TABLE public.shop_payment OWNER TO postgres;
+ALTER TABLE public.shop_order OWNER TO postgres;
+
+--
+-- Name: shop_order_item; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.shop_order_item (
+    id bigint NOT NULL,
+    quantity bigint NOT NULL,
+    subtotal_costs double precision NOT NULL,
+    inventory_id bigint NOT NULL,
+    order_id bigint NOT NULL,
+    CONSTRAINT shop_order_item_quantity_check CHECK ((quantity >= 0))
+);
+
+
+ALTER TABLE public.shop_order_item OWNER TO postgres;
+
+--
+-- Name: shop_order_item_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.shop_order_item_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.shop_order_item_id_seq OWNER TO postgres;
+
+--
+-- Name: shop_order_item_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.shop_order_item_id_seq OWNED BY public.shop_order_item.id;
+
 
 --
 -- Name: shop_payment_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -649,7 +689,7 @@ ALTER TABLE public.shop_payment_id_seq OWNER TO postgres;
 -- Name: shop_payment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.shop_payment_id_seq OWNED BY public.shop_payment.id;
+ALTER SEQUENCE public.shop_payment_id_seq OWNED BY public.shop_order.id;
 
 
 --
@@ -872,10 +912,17 @@ ALTER TABLE ONLY public.shop_inventory ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- Name: shop_payment id; Type: DEFAULT; Schema: public; Owner: postgres
+-- Name: shop_order id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.shop_payment ALTER COLUMN id SET DEFAULT nextval('public.shop_payment_id_seq'::regclass);
+ALTER TABLE ONLY public.shop_order ALTER COLUMN id SET DEFAULT nextval('public.shop_payment_id_seq'::regclass);
+
+
+--
+-- Name: shop_order_item id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_order_item ALTER COLUMN id SET DEFAULT nextval('public.shop_order_item_id_seq'::regclass);
 
 
 --
@@ -988,6 +1035,14 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 66	Can change inventory	17	change_inventory
 67	Can delete inventory	17	delete_inventory
 68	Can view inventory	17	view_inventory
+69	Can add order_item	18	add_order_item
+70	Can change order_item	18	change_order_item
+71	Can delete order_item	18	delete_order_item
+72	Can view order_item	18	view_order_item
+73	Can add order	8	add_order
+74	Can change order	8	change_order
+75	Can delete order	8	delete_order
+76	Can view order	8	view_order
 \.
 
 
@@ -996,7 +1051,7 @@ COPY public.auth_permission (id, name, content_type_id, codename) FROM stdin;
 --
 
 COPY public.auth_user (id, password, last_login, is_superuser, username, first_name, last_name, email, is_staff, is_active, date_joined) FROM stdin;
-1	pbkdf2_sha256$260000$lAE6fcZODRzBLHZTybxS7K$doizfLhfgps4yZSGSpZyyZ8xJQ32O5UgKzFwKeRXEv8=	2022-01-31 04:56:05.939305+08	t	admin			admin@test.com	t	t	2021-12-21 06:25:29.445558+08
+1	pbkdf2_sha256$260000$lAE6fcZODRzBLHZTybxS7K$doizfLhfgps4yZSGSpZyyZ8xJQ32O5UgKzFwKeRXEv8=	2022-02-24 23:53:57.508375+08	t	admin			admin@test.com	t	t	2021-12-21 06:25:29.445558+08
 \.
 
 
@@ -1206,6 +1261,16 @@ COPY public.django_admin_log (id, action_time, object_id, object_repr, action_fl
 183	2022-02-02 06:17:24.355796+08	5	Jeans zw premium high waist ciga (Jeans zw premium high waist ciga / color / blue, Jeans zw premium high waist ciga / size / M): 22/12	1	[{"added": {}}]	17	1
 184	2022-02-02 06:17:48.092167+08	6	Jeans zw premium high waist ciga (Jeans zw premium high waist ciga / color / blue, Jeans zw premium high waist ciga / size / L): 12/2	1	[{"added": {}}]	17	1
 185	2022-02-02 06:18:07.470663+08	7	Jeans zw premium high waist ciga (Jeans zw premium high waist ciga / color / black, Jeans zw premium high waist ciga / size / S): 21/1	1	[{"added": {}}]	17	1
+186	2022-02-06 19:05:24.662079+08	32	Jeans zw premium high waist ciga	2	[{"changed": {"fields": ["Description"]}}]	5	1
+187	2022-02-06 19:41:41.777412+08	1	Jamison's cart	3		2	1
+188	2022-02-06 19:43:24.026813+08	2	Jamison's cart	3		2	1
+189	2022-02-14 10:32:34.920622+08	3	Bob	3		4	1
+190	2022-02-14 10:34:08.260484+08	4	Bob	3		4	1
+191	2022-02-15 03:36:01.471864+08	2	Jamison's order	3		8	1
+192	2022-02-15 04:15:35.835229+08	6	123	3		4	1
+193	2022-02-24 23:54:13.438946+08	5	Bob	3		4	1
+194	2022-02-24 23:54:20.560877+08	1	Alice	3		4	1
+195	2022-02-24 23:55:22.484391+08	2	Bing-Yang Chen	2	[{"changed": {"fields": ["Email"]}}]	4	1
 \.
 
 
@@ -1221,7 +1286,6 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 5	shop	product
 6	shop	product_picture
 7	shop	cart_item
-8	shop	payment
 9	admin	logentry
 10	auth	permission
 11	auth	group
@@ -1231,6 +1295,8 @@ COPY public.django_content_type (id, app_label, model) FROM stdin;
 15	shop	favorite_item
 16	shop	product_specification
 17	shop	inventory
+8	shop	order
+18	shop	order_item
 \.
 
 
@@ -1271,6 +1337,17 @@ COPY public.django_migrations (id, app, name, applied) FROM stdin;
 30	shop	0011_auto_20220202_0240	2022-02-02 02:40:20.89446+08
 31	shop	0012_auto_20220202_0339	2022-02-02 03:40:21.481082+08
 44	shop	0013_auto_20220202_0615	2022-02-02 06:15:33.194592+08
+45	shop	0014_auto_20220203_0531	2022-02-06 18:58:03.709697+08
+46	shop	0015_auto_20220203_0536	2022-02-06 18:58:03.791694+08
+47	shop	0016_alter_cart_total_costs	2022-02-06 18:58:03.805699+08
+48	shop	0017_alter_cart_item_unique_together	2022-02-06 18:58:03.821696+08
+49	shop	0018_auto_20220205_0546	2022-02-06 18:58:03.861696+08
+50	shop	0019_auto_20220207_0651	2022-02-07 06:52:06.866399+08
+51	shop	0020_auto_20220207_0700	2022-02-07 07:00:33.630955+08
+52	shop	0021_auto_20220212_1438	2022-02-13 21:22:44.530467+08
+53	shop	0022_auto_20220220_1149	2022-02-23 19:27:12.892262+08
+54	shop	0023_alter_order_customer	2022-02-23 19:27:12.946268+08
+55	shop	0024_auto_20220220_2326	2022-02-23 19:27:13.064286+08
 \.
 
 
@@ -1297,6 +1374,9 @@ jw8t0lmt8klq2ots5nwbkyrr48s3zzhp	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpA
 09tavik9p18flk9iqxlnwyeuz0fgq5q6	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE7s5:A41yTtci8J3e6n4DiFstrLm0B9moTqttLlBL45AqkaM	2022-02-13 18:55:49.51616+08
 2uw1h4nsic584pymafe2fu6yf4ylj9ae	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nE8OY:6_heMY-aSfMc5CULCkH1K546po8-Gbdm_z_Nw7EDZlk	2022-02-13 19:29:22.634948+08
 h6lammdadqr3wu8junhxcmjf9e4192sf	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nEHEz:eI6kttzRbfadecrX2eSqIzXG3KNr-9UF4pRWHR_73y8	2022-02-14 04:56:05.948973+08
+xrwsy2nt8awz4lalgshh6zuni96vl556	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nJFJp:urdOcZvl7RyB-MVVZAH4cWPVoJYgn6MFhro622ip4yU	2022-02-27 21:53:37.059745+08
+n4pms4tbv3qiivv40ehtvcmi3042ud4a	.eJxVjEEOwiAQRe_C2pDCDCAu3fcMBGZGqZo2Ke3KeHfbpAvd_vfef6uU16WmtcmcBlYXZdTpdyuZnjLugB95vE-apnGZh6J3RR-06X5ieV0P9--g5la32pt8BsuAgYuXSNDdOkG0JgJEi86RBSJwSJ4jQhDm4DdqhND4AurzBb5wNt8:1nK520:G_r-kXBiaLUWc6N-djdyftirowRNklDW12_cMbxyWqI	2022-03-02 05:06:40.820612+08
+28opl1k3oxqbrp88705y7dyopd17e9mc	.eJxVjDkOwjAQRe_iGllelFhDSc8ZrPEsOIBsKUuFuDtESgHtf-_9l8m4rTVvi8x5YnM23px-t4L0kLYDvmO7dUu9rfNU7K7Ygy722lmel8P9O6i41G-dYAQNkmAATcysLBBJyVMQFxhVoovEBZU5KoeAA_jgiiMigVHN-wMcZDm6:1nNGRJ:t44zqzTRlSA5a5tmBKmAskEIEv96VhgnkfzDjMwGw3c	2022-03-10 23:53:57.521201+08
 \.
 
 
@@ -1313,7 +1393,8 @@ COPY public.shop_brand (id, name) FROM stdin;
 -- Data for Name: shop_cart; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_cart (id, total_costs, ordered_date, customer_id) FROM stdin;
+COPY public.shop_cart (id, total_costs, customer_id, freight, ready_to_checkout) FROM stdin;
+6	45	2	5	f
 \.
 
 
@@ -1321,7 +1402,8 @@ COPY public.shop_cart (id, total_costs, ordered_date, customer_id) FROM stdin;
 -- Data for Name: shop_cart_item; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_cart_item (id, quantity, subtotal_costs, cart_id, product_id) FROM stdin;
+COPY public.shop_cart_item (id, quantity, subtotal_costs, cart_id, inventory_id) FROM stdin;
+25	1	45	6	4
 \.
 
 
@@ -1345,10 +1427,9 @@ COPY public.shop_category (id, name) FROM stdin;
 -- Data for Name: shop_customer; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_customer (id, gender, email, phone_number, credit_card_number, account_type, date_of_birth, password, name, token) FROM stdin;
-1	\N	test@gmail.com	\N	\N	Normal	\N	123	Alice	\N
-3	\N	test3@test.com	0900000000	\N	Normal	2022-01-31	11111111	Bob	\N
-2	\N	test2@test.com	\N	\N	Normal	\N	11111111	Jamison	TTjCnNvwJQM44EYj4GXLXLWwTuCB0ILbBu5sfeMV7kL9xSKreqbbepJSacbIlkbP
+COPY public.shop_customer (id, gender, email, phone_number, account_type, date_of_birth, password, name, token, is_email_verified) FROM stdin;
+7	\N	jamisonforeverandever@gmail.com	0983990429	Normal	\N	123123123	Jamison	\N	t
+2	Male	106208004@g.nccu.edu.tw	0983990429	Normal	1999-04-29	123123123	陳秉洋	PKHzBaMptbs3n6eFbfUBqFHOz8fO4tn87F7T0NPSE5LeEMGVKS1vwTmgUXG7MqEX	t
 \.
 
 
@@ -1358,7 +1439,7 @@ COPY public.shop_customer (id, gender, email, phone_number, credit_card_number, 
 
 COPY public.shop_favorite_item (id, customer_id, product_id) FROM stdin;
 54	2	31
-42	2	24
+55	2	32
 \.
 
 
@@ -1367,18 +1448,32 @@ COPY public.shop_favorite_item (id, customer_id, product_id) FROM stdin;
 --
 
 COPY public.shop_inventory (id, color_id, size_id, inventory, quantity_sold, product_id) FROM stdin;
-4	1	3	11	1	32
-5	1	4	22	12	32
 6	1	5	12	2	32
-7	2	3	21	1	32
+7	2	3	20	2	32
+5	1	4	21	13	32
+4	1	3	8	4	32
 \.
 
 
 --
--- Data for Name: shop_payment; Type: TABLE DATA; Schema: public; Owner: postgres
+-- Data for Name: shop_order; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.shop_payment (id, type, final_costs, paid_date, cart_id, customer_id, address, arrived_date, picked_up_date, shipped_date) FROM stdin;
+COPY public.shop_order (id, type, final_costs, paid_date, customer_id, address, arrived_date, picked_up_date, shipped_date, ordered_date, name_of_picker, phone_number_of_picker) FROM stdin;
+1	Cash On Delivery	135	\N	2	7-11	\N	\N	\N	2022-02-14 10:56:59.248203+08	Jamison	0900000000
+3	Cash On Delivery	50	\N	2	FamilyMart	\N	\N	\N	2022-02-15 04:33:33.546145+08	123	1
+\.
+
+
+--
+-- Data for Name: shop_order_item; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.shop_order_item (id, quantity, subtotal_costs, inventory_id, order_id) FROM stdin;
+1	1	45	7	1
+2	1	45	5	1
+3	1	45	4	1
+5	1	45	4	3
 \.
 
 
@@ -1387,7 +1482,6 @@ COPY public.shop_payment (id, type, final_costs, paid_date, cart_id, customer_id
 --
 
 COPY public.shop_product (id, name, unit_price, description, brand_id, category_id) FROM stdin;
-32	Jeans zw premium high waist ciga	45		5	7
 24	Basic asymmetrical t-shirt	34	Tall black leather boots. Maxi-fringing detail on the back. Pointed toes. Soft leg.  Fits skirts and dresses.	5	4
 25	Check shirt	26	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts. Height of model: 175	5	4
 26	Contrast metallic shirt	40	Coat with a collar with flaps. Long Sleeve. Indoor pockets on the seam line on the sides. Fastening to the indoor latch at the front.  Height of model: 178	5	4
@@ -1414,6 +1508,7 @@ COPY public.shop_product (id, name, unit_price, description, brand_id, category_
 36	Check asymmetric mini skirt	34	Flat shoes are available in several colors. Tassel details on the front. Fit perfectly for daily use. Stylish and attractive.	5	5
 37	Leather stiletto-heel ankle boot	57	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4
 38	Leather strappy high-heel sandal	30	Fitted T-shirt in a polyamide blend. Featuring a wide round neckline and sleeves that reach below the elbow. Fits perfectly basic pants and skirts.	5	4
+32	Jeans zw premium high waist ciga	45	Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras finibus leo nec neque auctor, vitae tincidunt odio dictum. Sed a interdum urna. Vivamus sit amet massa dolor.	5	7
 \.
 
 
@@ -1518,7 +1613,7 @@ SELECT pg_catalog.setval('public.auth_group_permissions_id_seq', 1, false);
 -- Name: auth_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.auth_permission_id_seq', 68, true);
+SELECT pg_catalog.setval('public.auth_permission_id_seq', 76, true);
 
 
 --
@@ -1546,21 +1641,21 @@ SELECT pg_catalog.setval('public.auth_user_user_permissions_id_seq', 1, false);
 -- Name: django_admin_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_admin_log_id_seq', 185, true);
+SELECT pg_catalog.setval('public.django_admin_log_id_seq', 195, true);
 
 
 --
 -- Name: django_content_type_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_content_type_id_seq', 17, true);
+SELECT pg_catalog.setval('public.django_content_type_id_seq', 18, true);
 
 
 --
 -- Name: django_migrations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.django_migrations_id_seq', 44, true);
+SELECT pg_catalog.setval('public.django_migrations_id_seq', 55, true);
 
 
 --
@@ -1574,14 +1669,14 @@ SELECT pg_catalog.setval('public.shop_brand_id_seq', 5, true);
 -- Name: shop_cart_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.shop_cart_id_seq', 1, false);
+SELECT pg_catalog.setval('public.shop_cart_id_seq', 6, true);
 
 
 --
 -- Name: shop_cart_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.shop_cart_item_id_seq', 1, false);
+SELECT pg_catalog.setval('public.shop_cart_item_id_seq', 25, true);
 
 
 --
@@ -1595,14 +1690,14 @@ SELECT pg_catalog.setval('public.shop_category_id_seq', 10, true);
 -- Name: shop_customer_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.shop_customer_id_seq', 3, true);
+SELECT pg_catalog.setval('public.shop_customer_id_seq', 7, true);
 
 
 --
 -- Name: shop_favorite_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.shop_favorite_item_id_seq', 54, true);
+SELECT pg_catalog.setval('public.shop_favorite_item_id_seq', 55, true);
 
 
 --
@@ -1613,10 +1708,17 @@ SELECT pg_catalog.setval('public.shop_inventory_id_seq', 7, true);
 
 
 --
+-- Name: shop_order_item_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.shop_order_item_id_seq', 5, true);
+
+
+--
 -- Name: shop_payment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.shop_payment_id_seq', 1, false);
+SELECT pg_catalog.setval('public.shop_payment_id_seq', 3, true);
 
 
 --
@@ -1785,6 +1887,22 @@ ALTER TABLE ONLY public.shop_brand
 
 
 --
+-- Name: shop_cart shop_cart_customer_id_f4c598f5_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_cart
+    ADD CONSTRAINT shop_cart_customer_id_f4c598f5_uniq UNIQUE (customer_id);
+
+
+--
+-- Name: shop_cart_item shop_cart_item_inventory_id_cart_id_086d83d6_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_cart_item
+    ADD CONSTRAINT shop_cart_item_inventory_id_cart_id_086d83d6_uniq UNIQUE (inventory_id, cart_id);
+
+
+--
 -- Name: shop_cart_item shop_cart_item_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1865,18 +1983,26 @@ ALTER TABLE ONLY public.shop_inventory
 
 
 --
--- Name: shop_payment shop_payment_cart_id_f43cf12d_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: shop_order_item shop_order_item_inventory_id_order_id_1f400925_uniq; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.shop_payment
-    ADD CONSTRAINT shop_payment_cart_id_f43cf12d_uniq UNIQUE (cart_id);
+ALTER TABLE ONLY public.shop_order_item
+    ADD CONSTRAINT shop_order_item_inventory_id_order_id_1f400925_uniq UNIQUE (inventory_id, order_id);
 
 
 --
--- Name: shop_payment shop_payment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: shop_order_item shop_order_item_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.shop_payment
+ALTER TABLE ONLY public.shop_order_item
+    ADD CONSTRAINT shop_order_item_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: shop_order shop_payment_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_order
     ADD CONSTRAINT shop_payment_pkey PRIMARY KEY (id);
 
 
@@ -2004,13 +2130,6 @@ CREATE INDEX django_session_session_key_c0390e0f_like ON public.django_session U
 
 
 --
--- Name: shop_cart_customer_id_f4c598f5; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX shop_cart_customer_id_f4c598f5 ON public.shop_cart USING btree (customer_id);
-
-
---
 -- Name: shop_cart_item_cart_id_e5f5126c; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -2018,10 +2137,10 @@ CREATE INDEX shop_cart_item_cart_id_e5f5126c ON public.shop_cart_item USING btre
 
 
 --
--- Name: shop_cart_item_product_id_c640b838; Type: INDEX; Schema: public; Owner: postgres
+-- Name: shop_cart_item_inventory_id_0a31c309; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX shop_cart_item_product_id_c640b838 ON public.shop_cart_item USING btree (product_id);
+CREATE INDEX shop_cart_item_inventory_id_0a31c309 ON public.shop_cart_item USING btree (inventory_id);
 
 
 --
@@ -2074,10 +2193,24 @@ CREATE INDEX shop_inventory_size_id_fd814fbc ON public.shop_inventory USING btre
 
 
 --
+-- Name: shop_order_item_inventory_id_c571028f; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_order_item_inventory_id_c571028f ON public.shop_order_item USING btree (inventory_id);
+
+
+--
+-- Name: shop_order_item_payment_id_13c2a47e; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX shop_order_item_payment_id_13c2a47e ON public.shop_order_item USING btree (order_id);
+
+
+--
 -- Name: shop_payment_customer_id_5500af9d; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE INDEX shop_payment_customer_id_5500af9d ON public.shop_payment USING btree (customer_id);
+CREATE INDEX shop_payment_customer_id_5500af9d ON public.shop_order USING btree (customer_id);
 
 
 --
@@ -2204,11 +2337,11 @@ ALTER TABLE ONLY public.shop_cart_item
 
 
 --
--- Name: shop_cart_item shop_cart_item_product_id_c640b838_fk_shop_product_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: shop_cart_item shop_cart_item_inventory_id_0a31c309_fk_shop_inventory_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.shop_cart_item
-    ADD CONSTRAINT shop_cart_item_product_id_c640b838_fk_shop_product_id FOREIGN KEY (product_id) REFERENCES public.shop_product(id) DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT shop_cart_item_inventory_id_0a31c309_fk_shop_inventory_id FOREIGN KEY (inventory_id) REFERENCES public.shop_inventory(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -2252,18 +2385,26 @@ ALTER TABLE ONLY public.shop_inventory
 
 
 --
--- Name: shop_payment shop_payment_cart_id_f43cf12d_fk_shop_cart_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: shop_order_item shop_order_item_inventory_id_c571028f_fk_shop_inventory_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.shop_payment
-    ADD CONSTRAINT shop_payment_cart_id_f43cf12d_fk_shop_cart_id FOREIGN KEY (cart_id) REFERENCES public.shop_cart(id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE ONLY public.shop_order_item
+    ADD CONSTRAINT shop_order_item_inventory_id_c571028f_fk_shop_inventory_id FOREIGN KEY (inventory_id) REFERENCES public.shop_inventory(id) DEFERRABLE INITIALLY DEFERRED;
 
 
 --
--- Name: shop_payment shop_payment_customer_id_5500af9d_fk_shop_customer_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: shop_order_item shop_order_item_order_id_fb1c4e35_fk_shop_order_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.shop_payment
+ALTER TABLE ONLY public.shop_order_item
+    ADD CONSTRAINT shop_order_item_order_id_fb1c4e35_fk_shop_order_id FOREIGN KEY (order_id) REFERENCES public.shop_order(id) DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: shop_order shop_payment_customer_id_5500af9d_fk_shop_customer_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.shop_order
     ADD CONSTRAINT shop_payment_customer_id_5500af9d_fk_shop_customer_id FOREIGN KEY (customer_id) REFERENCES public.shop_customer(id) DEFERRABLE INITIALLY DEFERRED;
 
 
