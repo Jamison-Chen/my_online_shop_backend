@@ -3,8 +3,6 @@ from django.views.decorators.csrf import csrf_exempt
 from .my_decorators import cors_exempt
 from .models import customer, order, order_item
 
-# from django.db.models import Sum
-
 
 @csrf_exempt
 @cors_exempt
@@ -19,7 +17,7 @@ def index(request):
             crt = cstmr.cart
         except:
             return HttpResponseServerError()
-        if not crt.ready_to_checkout:
+        if (not crt.ready_to_checkout) or crt.items.all().count() == 0:
             return HttpResponseNotFound()
         return JsonResponse({"status": "succeeded"})
     elif request.method == "POST":
@@ -55,7 +53,7 @@ def index(request):
                 each.inventory.inventory -= each.quantity
                 each.inventory.quantity_sold += each.quantity
                 each.inventory.save()
-            cstmr.cart.delete()
+            cstmr.cart.delete()  # delete cart after successfully creating on order
             res["status"] = "succeeded"
         elif operation == "read":
             res["data"] = []
