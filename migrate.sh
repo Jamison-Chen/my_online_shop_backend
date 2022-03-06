@@ -1,5 +1,3 @@
 #! /bin/bash
-git add .
-git commit -m "update"
-git push origin master
+# run this script after the deploying process is completed on Heroku
 heroku run python manage.py migrate -a online-shop-prototype
