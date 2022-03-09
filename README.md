@@ -28,10 +28,10 @@ The My Online Shop project is divided into two parts, frontend and backend respe
 and this repository is the backend. To see the frontend repository, please visit
 [this page](https://github.com/Jamison-Chen/my_online_shop).
 
-This document is the tutorial that guides you to install the frontend of the
-My Online Shop project.
+We will guide you to install the backend of the My Online Shop project through
+this document.
 
-If you want to directly jump to some sepecific part of this document,
+If you want to directly jump to some specific part of this document,
 here we provide you the contents overview with link:
 
 * [Installation](#title-installation)
@@ -50,7 +50,7 @@ as the demo.
 * [Python 3.9 +](https://www.python.org/downloads/)
 * [pipenv](https://pypi.org/project/pipenv/)
 * [Postgresql 14.x](https://www.postgresql.org/download/)
-* [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* [Git 2.35.x](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 
 #### Install for Development
 
@@ -66,7 +66,7 @@ as the demo.
     python --version
     ```
 
-    If the command above result in an error, try ```python3 --version``` instead.
+    If the command above results in an error, try `python3 --version` instead.
 
 * Step3: Edit the Pipfile.
 
@@ -79,7 +79,7 @@ as the demo.
     python_version = "3.10"
     ```
 
-    Change the "3.10" here to the Python version you got in last step.
+    Change the "3.10" here to the Python version you got in the previous step.
 
     ***Notes***
   * *Your Python version should be higher than 3.9*
@@ -144,4 +144,12 @@ as the demo.
 
 <h2 id="title-making-contribution">Making Contribution</h2>
 
-TBC
+#### Run the Server Locally
+
+Activate the virtual environment and run the manage.py file with argument under
+the root directory.
+
+```bash
+pipenv shell
+python manage.py runserver
+```
