@@ -24,18 +24,36 @@
 
 <h1 align="center">My Online Shop</h1>
 
+The My Online Shop Project is the prototype of an e-commerce website,
+this website is currently implemented with the following key functions:
+
+* Account
+  * User Registration
+  * Email Verification
+  * User Login / Logout
+  * User Info Editing and Password Changing
+* Product
+  * Favorites
+  * Cart
+  * Single-Layer Product Classification
+  * Product Specification Selection
+* Checkout & Order
+  * The overall workflow **BEFORE** selecting pick-up location
+  * Order Tracking
+
 The My Online Shop project is divided into two parts, frontend and backend respectively,
 and this repository is the backend. To see the frontend repository, please visit
 [this page](https://github.com/Jamison-Chen/my_online_shop).
 
-We will guide you to install the backend of the My Online Shop project through
-this document.
+In this document, we will guide you through the process of installing the frontend
+of the My Online Shop project.
 
 If you want to directly jump to some specific part of this document,
 here we provide you the contents overview with link:
 
 * [Installation](#title-installation)
 * [Making Contribution](#title-making-contribution)
+* [Development Roadmap](#title-development-roadmap)
 
 If you want to see the demo of the whole project, please visit [here](https://jamison-chen.github.io/my_online_shop/).
 
@@ -51,6 +69,7 @@ as the demo.
 * [pipenv](https://pypi.org/project/pipenv/)
 * [Postgresql 14.x](https://www.postgresql.org/download/)
 * [Git 2.35.x](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
+* [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli)
 
 #### Install for Development
 
@@ -81,10 +100,11 @@ as the demo.
 
     Change the "3.10" here to the Python version you got in the previous step.
 
-    ***Notes***
-  * *Your Python version should be higher than 3.9*
-  * *The version you got might look like 3.x.x, just ignore the last part
-    including and after the second dot.*
+  >  ***Notes***
+  >
+  > * *Your Python version should be higher than 3.9*
+  > * *The version you got might look like 3.x.x, just ignore the last part
+      including and after the second dot.*
 
 * Step4: Install the virtual Python environment.
 
@@ -95,10 +115,11 @@ as the demo.
     pipenv install psycopg2
     ```
 
-    ***Notes***
-  * *The command above might seem like that it only install the package called psycopg2,
-    but what it does is installing **every** packages stated in the Pipfile **and**
-    the psycopg2 package.*
+  > ***Notes***
+  >
+  > * *The command above might seem like that it only install the package called
+      psycopg2, but what it does is installing **every** packages stated in the Pipfile
+      **and** the psycopg2 package.*
 
 * Step5: Create a database for this project.
 
@@ -153,3 +174,70 @@ the root directory.
 pipenv shell
 python manage.py runserver
 ```
+
+#### Push to the remote branch
+
+* Step1: Make commits.
+
+  ```bash
+  git add .
+  git commit -m "your commit title" -m "your commit description"
+  ```
+
+* Step2: Push to the remote branch.
+
+  ```bash
+  git push origin master
+  ```
+
+***Heroku*** will detect your action of pushing a new verion up to the
+remote branch, and will then deploy this latest version automatically.
+
+But the process of deployment takes time (about 1 minute), so you will need to wait
+a moment to see the correct version of your website online.
+
+#### Prepare the environment requirements document for Heroku
+
+If you updated, installed or unistalled any packages while developing the latest
+version, you will need to tell Heroku the current staus of packages used in the project.
+
+To achieve this, just simply run the following command under the root directory:
+
+```bash
+pipenv lock --requirements > requirements.txt
+```
+
+and you will see some changes in the `requirements.txt` file.
+
+#### Migrate the remote database
+
+We assume that you already know what you should do after modifying the `models.py`
+file under the `your-app-name` directory.
+
+Similarly, you should also migrate the remote database if you want your online
+version to run properly as in your local host.
+
+To do this, you have to use the Heroku CLI to communicate with the Heroku Server
+
+```bash
+heroku run python manage.py migrate
+```
+
+Good job!
+
+<h2 id="title-development-roadmap">Development Roadmap</h2>
+
+The list below shows what we are going to implement in the next release:
+
+* Account
+  * Need a mail agent for the online version to achieve the email verification.
+  * Maybe use Session instead of Cookie to keep the user’s login status.
+* Product
+  * Multi-Layer Product Classification
+  * Provide more sections such as “Popular This Week”, “New Arrival”, etc.
+  * The product searching algorithms
+* Checkout & Order
+  * Provide coupons and let customers apply them before checking out.
+  * Provide a map to select stores when customers choose to pick up their
+  products in-store.
+  * The workflow of payment
