@@ -52,6 +52,7 @@ If you want to directly jump to some specific part of this document,
 here we provide you the contents overview with link:
 
 * [Installation](#title-installation)
+* [Start to Develop](#title-start-to-develop)
 * [Making Contribution](#title-making-contribution)
 * [Development Roadmap](#title-development-roadmap)
 
@@ -163,9 +164,9 @@ as the demo.
     python manage.py migrate
     ```
 
-<h2 id="title-making-contribution">Making Contribution</h2>
+<h2 id="title-start-to-develop">Start to Develop</h2>
 
-#### Run the Server Locally
+#### Run the Local Server
 
 Activate the virtual environment and run the manage.py file with argument under
 the root directory.
@@ -175,55 +176,58 @@ pipenv shell
 python manage.py runserver
 ```
 
-#### Push to the remote branch
+<h2 id="title-making-contribution">Making Contributions</h2>
 
-* Step1: Make commits.
+> If you just want to perform continuous integration in a simple
+  magic command and don't want to know what exactly will happen,
+  here's that magic command:
+>
+> For MacOS developers:
+>
+> ```bash
+> sh deploy.sh
+> ```
+>
+> For Windows developers:
+>
+> ```bat
+> deploy.bat
+> ```
+>
+> Run this and you can skip the rest of this paragraph.
 
-  ```bash
-  git add .
-  git commit -m "your commit title" -m "your commit description"
-  ```
+#### Prepare the `requirements.txt` file before pushing to the remote branch
 
-* Step2: Push to the remote branch.
+> We use **Heroku** as the cloud server for this app.
 
-  ```bash
-  git push origin master
-  ```
-
-***Heroku*** will detect your action of pushing a new verion up to the
-remote branch, and will then deploy this latest version automatically.
-
-But the process of deployment takes time (about 1 minute), so you will need to wait
-a moment to see the correct version of your website online.
-
-#### Prepare the environment requirements document for Heroku
-
-If you updated, installed or unistalled any packages while developing the latest
-version, you will need to tell Heroku the current staus of packages used in the project.
-
-To achieve this, just simply run the following command under the root directory:
+If you updated, installed or unistalled any packages during the phase of developing
+your latest version, you will need to tell Heroku the current environment requirements
+of the project by running the following command under the root directory:
 
 ```bash
 pipenv lock --requirements > requirements.txt
 ```
 
-and you will see some changes in the `requirements.txt` file.
+and you will see some changes in the `requirements.txt` file afterwards.
 
-#### Migrate the remote database
+#### Commit and Push to the remote branch
 
-We assume that you already know what you should do after modifying the `models.py`
-file under the `your-app-name` directory.
+  ```bash
+  git add .
+  git commit -m "your commit title" -m "your description"
+  git push origin master
+  ```
 
-Similarly, you should also migrate the remote database if you want your online
-version to run properly as in your local host.
+Heroku will detect your action of pushing a new version up to the
+remote GitHub branch via GitHub webhooks, and will then build this latest version
+automatically.
 
-To do this, you have to use the Heroku CLI to communicate with the Heroku Server
+After a successful build, it comes to the release phase. In this phase, Heroku will
+migrate the database shchema using the instructions written in the `Procfile` file.
+(*c.f. [https://devcenter.heroku.com/articles/release-phase](https://devcenter.heroku.com/articles/release-phase)*)
 
-```bash
-heroku run python manage.py migrate
-```
-
-Good job!
+The processes of building and releasing take time (about 2 minutes), so you will
+need to wait a moment to see the correct version of your online product.
 
 <h2 id="title-development-roadmap">Development Roadmap</h2>
 
