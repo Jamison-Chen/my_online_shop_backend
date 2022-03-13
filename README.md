@@ -45,15 +45,17 @@ The My Online Shop project is divided into two parts, frontend and backend respe
 and this repository is the backend. To see the frontend repository, please visit
 [this page](https://github.com/Jamison-Chen/my_online_shop).
 
-In this document, we will guide you through the process of installing the frontend
+In this document, we will guide you through the process of installing the backend
 of the My Online Shop project.
+
+## Contents
 
 If you want to directly jump to some specific part of this document,
 here we provide you the contents overview with link:
 
 * [Installation](#title-installation)
 * [Start to Develop](#title-start-to-develop)
-* [Making Contribution](#title-making-contribution)
+* [Making Contributions](#title-making-contribution)
 * [Development Roadmap](#title-development-roadmap)
 
 If you want to see the demo of the whole project, please visit [here](https://jamison-chen.github.io/my_online_shop/).
@@ -164,17 +166,36 @@ as the demo.
     python manage.py migrate
     ```
 
+<font size="1">*[Back to contents](#contents)*</font>
+
 <h2 id="title-start-to-develop">Start to Develop</h2>
 
-#### Run the Local Server
+#### Run the local server for development
 
-Activate the virtual environment and run the manage.py file with argument under
-the root directory.
+Under the root directory (where the `manage.py` file is located), run:
 
 ```bash
 pipenv shell
 python manage.py runserver
 ```
+
+#### Make migrations
+
+Whenever you modify any `models.py` files, you will need to make migration files
+so that the database schema can be migrated according to instructions in those files.
+
+```bash
+pipenv shell
+python manage.py makemigrations
+```
+
+#### Migrate the database schema
+
+```bash
+python manage.py migrate
+```
+
+<font size="1">*[Back to contents](#contents)*</font>
 
 <h2 id="title-making-contribution">Making Contributions</h2>
 
@@ -210,7 +231,7 @@ pipenv lock --requirements > requirements.txt
 
 and you will see some changes in the `requirements.txt` file afterwards.
 
-#### Commit and Push to the remote branch
+#### Commit and push to the remote branch
 
   ```bash
   git add .
@@ -229,9 +250,11 @@ migrate the database shchema using the instructions written in the `Procfile` fi
 The processes of building and releasing take time (about 2 minutes), so you will
 need to wait a moment to see the correct version of your online product.
 
+<font size="1">*[Back to contents](#contents)*</font>
+
 <h2 id="title-development-roadmap">Development Roadmap</h2>
 
-The list below shows what we are going to implement in the next release:
+The list below shows features that we are going to implement in the future releases:
 
 * Account
   * Need a mail agent for the online version to achieve the email verification.
