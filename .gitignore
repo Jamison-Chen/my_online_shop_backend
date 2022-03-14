@@ -26,7 +26,7 @@ hs_err_pid*
 .vscode/
 
 # Byte-compiled / optimized / DLL files
-__pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -487,7 +487,7 @@ paket-files/
 .cr/personal
 
 # Python Tools for Visual Studio (PTVS)
-__pycache__/
+**/__pycache__/
 *.pyc
 
 # Cake - Uncomment if you are using it
