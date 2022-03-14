@@ -3,14 +3,14 @@ from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseNotFou
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.middleware import csrf
-from .my_decorators import cors_exempt
-from .models import customer
 from django.contrib.sites.shortcuts import get_current_site
 from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_text
 from django.core.mail import EmailMessage
 from .utils import emailVerifyTokenGenerator, EmailThreading
+from .my_decorators import cors_exempt
+from .models import customer
 
 
 def confirmIdentity(userEmail, userPassword):
