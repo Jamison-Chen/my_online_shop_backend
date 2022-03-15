@@ -8,7 +8,7 @@ from django.template.loader import render_to_string
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_text
 from django.core.mail import EmailMessage
-from .utils import emailVerifyTokenGenerator, EmailThreading
+from .utils import emailVerifyTokenGenerator, EmailThreading, EMAIL_SEND_MESSAGE
 from .my_decorators import cors_exempt
 from .models import customer
 
@@ -145,9 +145,7 @@ def register(request):
             )
             sendVerificationEmail(request, c)
             res["status"] = "passed"
-            res[
-                "message"
-            ] = "We've just send you an email to verify this account. Please check your email inbox, and then go back here to log in."
+            res["message"] = EMAIL_SEND_MESSAGE
             res = JsonResponse(res)
         return res
     else:
@@ -164,9 +162,7 @@ def resendVerificationEmail(request):
             c = customer.objects.get(email=email)
             sendVerificationEmail(request, c)
             res["status"] = "succeeded"
-            res[
-                "message"
-            ] = "We've just send you an email to verify this account. Please check your email inbox, and then go back here to log in."
+            res["message"] = EMAIL_SEND_MESSAGE
             res = JsonResponse(res)
             return res
         except:
@@ -207,9 +203,7 @@ def editProfile(request):
                 )
                 sendVerificationEmail(request, q.get())
                 res["status"] = "email not verified"
-                res[
-                    "message"
-                ] = "We've just send you an email to verify this account. Please check your email inbox, and then go back here to log in."
+                res["message"] = EMAIL_SEND_MESSAGE
             else:
                 q.update(
                     name=newName,

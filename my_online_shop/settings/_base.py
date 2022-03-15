@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+# BASE_DIR indicates the root directory of this project
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Quick-start development settings - unsuitable for production
@@ -26,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Local apps
+    "my_online_shop.core",
     "my_online_shop.shop",
 ]
 
@@ -41,10 +43,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "my_online_shop.urls"
 
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [TEMPLATES_DIR],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -66,7 +69,7 @@ WSGI_APPLICATION = "my_online_shop.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "my_online_shop",
+        "NAME": os.environ.get("DB_NAME"),
         "USER": os.environ.get("DB_USER"),
         "PASSWORD": os.environ.get("DB_PASSWORD"),
         "HOST": "localhost",
@@ -106,10 +109,11 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
-STATIC_ROOT = "/static"
+# "root" here means the root dir of your machine
+STATIC_ROOT = "/django_static/my_online_shop/"
 STATIC_URL = "/static/"
 
-MEDIA_ROOT = "/media"
+MEDIA_ROOT = "/django_media/my_online_shop"
 MEDIA_URL = "/media/"
 
 EXTERNAL_BASE = os.path.join(BASE_DIR, "externals")

@@ -17,3 +17,5 @@ class EmailVerifyTokenGenerator(PasswordResetTokenGenerator):
 
 
 emailVerifyTokenGenerator = EmailVerifyTokenGenerator()
+
+EMAIL_SEND_MESSAGE = "We've just send you an email to verify this account. Please check your email inbox, and then go back here to log in."
