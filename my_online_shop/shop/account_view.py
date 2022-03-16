@@ -13,6 +13,15 @@ from .my_decorators import cors_exempt
 from .models import customer
 
 
+def validateNewUserInfo(
+    email=None, userName=None, oldPassword=None, newPassword=None, newPasswordCheck=None
+):
+    if email and userName and newPassword and newPasswordCheck:
+        pass
+    elif True:
+        pass
+
+
 def confirmIdentity(userEmail, userPassword):
     try:
         q = customer.objects.get(email=userEmail)
